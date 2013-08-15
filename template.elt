@@ -1,0 +1,59 @@
+;;; ___package_name___.el --- 
+
+;; Copyright (C) ___year___ Artur Malabarba <bruce.connor.am@gmail.com>
+
+;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
+;; URL: http://github.com/Bruce-Connor/___package_name___
+;; Version: ___version___
+;; Keywords: 
+;; Prefix: ___prefix___
+;; Separator: /
+
+;;; Commentary:
+;;
+;; 
+
+;;; Instructions:
+;;
+;; INSTALLATION
+;;
+;; If you install from melpa: nothing necessary, should work out of the box.
+;; If you install manually: (require '___package_name___)
+
+;;; License:
+;;
+;; This file is NOT part of GNU Emacs.
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License
+;; as published by the Free Software Foundation; either version 2
+;; of the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;; 
+
+;;; Change Log:
+;; ___version___ - ___date___ - Created File.
+;;; Code:
+
+(defconst ___prefix______sep___version "___version___" "Version of the ___package_name___.el package.")
+(defconst ___prefix______sep___version-int 1 "Version of the ___package_name___.el package, as an integer.")
+(defun ___prefix______sep___bug-report ()
+  "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and ___prefix___ versions."
+  (interactive)
+  (browse-url "https://github.com/Bruce-Connor/___package_name___/issues/new")
+  (message "Your ___prefix______sep___version is: %s, and your emacs version is: %s.\nPlease include this in your report!"
+           ___prefix______sep___version emacs-version))
+(defun ___prefix______sep___customize ()
+  "Open the customization menu in the `___package_name___' group."
+  (interactive)
+  (customize-group '___package_name___ t))
+
+;;;###autoload
+
+
+(provide '___package_name___)
+;;; ___package_name___.el ends here.
