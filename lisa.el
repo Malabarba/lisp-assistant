@@ -386,8 +386,12 @@ doesn't exist, she will kindly offer to download it for you."
   ""
   (if (file-readable-p file)
       (insert-file-contents-literally file)
-    (y-or-n-p (lisa--format "It seems we don't have this template. May I fetch it for you, §?
- (I'll download it from )"))))
+    (if (y-or-n-p (lisa--format "It seems we don't have this template. May I fetch it for you, §?
+ (I'll download it from \"https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt\")"))        
+        (if (url-copy-file "https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt" "~/okokokok")
+            (insert-file-contents-literally file)
+          (error "I'm sorry, something wrong happened with the download."))
+      (error "I'm sorry I couldn't help. Perhaps you'd like to download the template yourself."))))
 
 ;;;###autoload
 (define-minor-mode lisa-mode
