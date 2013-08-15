@@ -37,12 +37,14 @@
 ;; 
 
 ;;; Change Log:
+;; 0.1 - 20130815 - Perfected keymap.
 ;; 0.1 - 20130815 - Greatly improved doc.
 ;; 0.1 - 20130815 - Started creating the minor mode.
 ;; 0.1 - 20130814 - Imported code.
 ;; 0.1 - 20130813 - Created File.
 ;;; Code:
 
+(require 'yasnippet)
 (defconst lisa-version "0.1" "Version of the lisa.el package.")
 (defconst lisa-version-int 1 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
@@ -130,6 +132,15 @@ Leave this nil if you don't want to use it."
                (< 0 (length lisa-name)))
     (setq lisa-name "Sir"))
   (replace-regexp-in-string "§" lisa-name sn))
+
+(defun lisa--should-template ()
+  "Lisa knows you want a template even if you don't ask.
+
+Guess whether this is such a moment."
+  (when lisa-package-directory
+    (unless (file-directory-p lisa-package-directory)
+      (error (lisa--format "I'm sorry §, but `lisa-package-directory' needs to be a directory.")))
+    (= (point-max) (point-min))))
 
 ;;; ---------------------------------------------------------------------
 ;;; Package handling functions
@@ -318,26 +329,90 @@ still needs improving)."
 
 ;;; ---------------------------------------------------------------------
 ;;; Lisa Keymap
-(define-prefix-command 'lisa-sub-map)
-(define-key lisa-sub-map "b" 'eval-buffer)
-(define-key lisa-sub-map "d" 'eval-defun)
-(define-key lisa-sub-map "e" 'eval-expression)
-(define-key lisa-sub-map "l" 'eval-last-sexp)
-(define-key lisa-sub-map "p" 'eval-print-last-sexp)
-(define-key lisa-sub-map "r" 'eval-region)
-(define-key lisa-sub-map "n" 'lisa-define-package-variables)
-(define-key lisa-sub-map "#" 'lisa-define-package-variables)
-(define-key lisa-sub-map "l" 'lisa-insert-change-log)
-(define-key lisa-sub-map "t" 'lisa-insert-template)
-(define-key lisa-sub-map "u" 'lisa-update-version-number)
-(define-key lisa-sub-map "f" 'lisa-find-or-define-function)
-(define-key lisa-sub-map "v" 'lisa-find-or-define-variable)
+(define-prefix-command 'lisa-lisa-map)
+(define-prefix-command 'lisa-eval-map)
+(define-key lisa-eval-map "b" 'eval-buffer)
+(define-key lisa-eval-map "d" 'eval-defun)
+(define-key lisa-eval-map "e" 'eval-expression)
+(define-key lisa-eval-map "l" 'eval-last-sexp)
+(define-key lisa-eval-map "p" 'eval-print-last-sexp)
+(define-key lisa-eval-map "r" 'eval-region)
+(define-key lisa-lisa-map "n" 'lisa-define-package-variables)
+(define-key lisa-lisa-map "#" 'lisa-define-package-variables)
+(define-key lisa-lisa-map "l" 'lisa-insert-change-log)
+(define-key lisa-lisa-map "t" 'lisa-insert-template)
+(define-key lisa-lisa-map "u" 'lisa-update-version-number)
+(define-key lisa-lisa-map "f" 'lisa-find-or-define-function)
+(define-key lisa-lisa-map "v" 'lisa-find-or-define-variable)
+(defcustom lisa-helpful-keymap nil
+  "Whether Lisa's keymap should prefer being helpful or unobstrusive.
 
+If this is nil, Lisa will prefer to stay out of your way. The
+lisa key bindings will be under \"C-c l\" (use \"C-c l C-h\" to
+see them all), and the eval key bindings will be under \"C-c
+e\" (use \"C-c e C-h\" to see them all).
+
+If this is t, Lisa will always be right around the corner. All
+key bindings will be directly under \"C-c\".
+By default, these will be:
+    \"C-c f\" `lisa-find-or-define-function'
+    \"C-c v\" `lisa-find-or-define-variable'.
+    \"C-c #\" `lisa-define-package-variables'
+    \"C-c l\" `lisa-insert-change-log'
+    \"C-c u\" `lisa-update-version-number'
+    \"C-c t\" `lisa-insert-template'
+    \"C-c b\" `eval-buffer'
+    \"C-c d\" `eval-defun'
+    \"C-c e\" `eval-expression'
+    \"C-c p\" `eval-print-last-sexp'
+    \"C-c r\" `eval-region'
+
+This can also be 'eval (or 'lisa). In that case only the
+eval-something functions (or the lisa-something functions,
+respectively) will be bound under \"C-c\", the others will stay
+under \"C-c l\" (or \"C-c e\", respectively)."
+  :type 'boolean
+  :group 'lisa
+  :package-version '(lisa . "0.1"))
+
+;;; ---------------------------------------------------------------------
+;;; Templating
 (defcustom lisa-package-template-file (concat user-emacs-directory "lisa-package-template.elt")
   "File which Lisa will use as template for new packages.
 
 If file isn't found, Lisa kindly offers to download it for you."
   :type 'file
+  :group 'lisa
+  :package-version '(lisa . "0.1"))
+
+(defcustom lisa-package-directory nil
+  "If this is nil, auto-insertion of templates is disabled.
+
+If this is a string, it should be a directory name. Any new
+\".el\" file created inside this directory tree will be
+automatically populated with a package template, which Lisa will
+then proceed to fill out for you.
+
+Even if this is nil you can still insert templates with
+\\[lisa-insert-template].
+
+IMPORTANT! Make sure your elpa directory (usually
+\"~/.emacs.d/elpa/\") is NOT inside this. Lisa is a very nice
+lady, but if you don't follow this warning she'll turn into a hag
+every time you install/update packages. "
+  :type 'directory
+  :group 'lisa
+  :package-version '(lisa . "0.1"))
+
+(defcustom lisa-full-name (user-full-name)
+  "Your full name, to be used when filling templates."
+  :type 'string
+  :group 'lisa
+  :package-version '(lisa . "0.1"))
+
+(defcustom lisa-email user-mail-address
+  "Your email address, to be used when filling templates."
+  :type 'string
   :group 'lisa
   :package-version '(lisa . "0.1"))
 
@@ -359,7 +434,7 @@ doesn't exist, she will kindly offer to download it for you."
     (lisa-define-package-variables)
     ;; Check if the prefix is what the user wants
     (setq lisa-package-prefix 
-          (read-string (lisa--format "§, what is the package prefix? (tipically 2-4 chars) ")
+          (read-string (lisa--format "§, what is the package prefix? (tipically 2-4 letters) ")
                        lisa-package-prefix))
     (when (string= lisa-package-prefix "")
       (setq lisa-package-prefix nil))
@@ -370,6 +445,9 @@ doesn't exist, she will kindly offer to download it for you."
                          lisa-default-version-number)))
     ;; Insert and fill in the template
     (lisa--insert-or-download-template)
+    (lisa--global-replace "___full_name___" lisa-full-name)
+    (lisa--global-replace "___email___" lisa-email)
+    (lisa--global-replace "___github_user_name___" lisa-github-username)
     (lisa--global-replace "___package_name___" lisa-package-name)
     (lisa--global-replace "___version___" lisa-package-version)
     (lisa--global-replace "___year___" yr)
@@ -407,9 +485,11 @@ The usual way to turn it on is:
 
 (if lisa-mode
     (progn
+      ;; New package template
       (if (lisa--should-template)
           (lisa-insert-template)
-        (lisa-define-package-Variables))
+        (lisa-define-package-variables))
+      ;; Activate yasnippets
       (when (and lisa--load-file-name (fboundp 'yas-reload-all))
         (let ((dir (concat (file-name-directory lisa--load-file-name) "snippets")))
           (unless (member dir yas-snippet-dirs)
@@ -417,49 +497,25 @@ The usual way to turn it on is:
             (yas-reload-all))))
       ;; Keymap
       (setq lisa-mode-map '(keymap))
-      (define-key lisa-mode-map "l" 'lisa-sub-map)
-      (when lisa-helpful-keymap
+      (define-key lisa-mode-map "l" 'lisa-lisa-map)
+      (define-key lisa-mode-map "e" 'lisa-eval-map)
+      (cond
+       ((or (eq lisa-helpful-keymap 'eval)
+            (eq lisa-helpful-keymap t))
         (define-key lisa-mode-map "b" 'eval-buffer)
         (define-key lisa-mode-map "d" 'eval-defun)
         (define-key lisa-mode-map "e" 'eval-expression)
-        (define-key lisa-mode-map "l" 'eval-last-sexp)
+        ;; (define-key lisa-mode-map "l" 'eval-last-sexp)
         (define-key lisa-mode-map "p" 'eval-print-last-sexp)
-        (define-key lisa-mode-map "r" 'eval-region)
-        (define-key lisa-mode-map "n" 'lisa-define-package-variables)
+        (define-key lisa-mode-map "r" 'eval-region))
+       ((or (eq lisa-helpful-keymap 'lisa)
+            (eq lisa-helpful-keymap t))
         (define-key lisa-mode-map "#" 'lisa-define-package-variables)
         (define-key lisa-mode-map "l" 'lisa-insert-change-log)
         (define-key lisa-mode-map "u" 'lisa-update-version-number)
         (define-key lisa-mode-map "t" 'lisa-insert-template)
         (define-key lisa-mode-map "f" 'lisa-find-or-define-function)
-        (define-key lisa-mode-map "v" 'lisa-find-or-define-variable)))))
-
-(defcustom lisa-package-directory nil
-  "If this is nil, auto-insertion of templates is disabled.
-
-If this is a string, it should be a directory name. Any new
-\".el\" file created inside this directory tree will be
-automatically populated with a package template, which Lisa will
-then proceed to fill out for you.
-
-Even if this is nil you can still insert templates with
-\\[lisa-insert-template].
-
-IMPORTANT! Make sure your elpa directory (usually
-\"~/.emacs.d/elpa/\") is NOT inside this. Lisa is a very nice
-lady, but if you don't follow this warning she'll turn into a hag
-every time you install/update packages. "
-  :type 'directory
-  :group 'lisa
-  :package-version '(lisa . "0.1"))
-
-(defun lisa--should-template ()
-  "Lisa knows you want a template even if you don't ask.
-
-Guess whether this is such a moment."
-  (when lisa-package-directory
-    (unless (file-directory-p lisa-package-directory)
-      (error (lisa--format "I'm sorry §, but `lisa-package-directory' needs to be a directory.")))
-    (= (point-max) (point-min))))
+        (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))))))
 
 
 (provide 'lisa)

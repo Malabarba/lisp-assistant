@@ -1,13 +1,13 @@
 ;;; ___package_name___.el --- 
 
-;; Copyright (C) ___year___ Artur Malabarba <bruce.connor.am@gmail.com>
+;; Copyright (C) ___year___ ___full_name___ <___email___>
 
-;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
-;; URL: http://github.com/Bruce-Connor/___package_name___
+;; Author: ___full_name___ <___email___>>
+;; URL: http://github.com/___github_user_name___/___package_name___
 ;; Version: ___version___
 ;; Keywords: 
 ;; Prefix: ___prefix___
-;; Separator: /
+;; Separator: -
 
 ;;; Commentary:
 ;;
@@ -18,7 +18,9 @@
 ;; INSTALLATION
 ;;
 ;; If you install from melpa: nothing necessary, should work out of the box.
-;; If you install manually: (require '___package_name___)
+;;
+;; If you install manually:
+;;     (require '___package_name___)
 
 ;;; License:
 ;;
@@ -44,9 +46,9 @@
 (defun ___prefix______sep___bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and ___prefix___ versions."
   (interactive)
-  (browse-url "https://github.com/Bruce-Connor/___package_name___/issues/new")
   (message "Your ___prefix______sep___version is: %s, and your emacs version is: %s.\nPlease include this in your report!"
-           ___prefix______sep___version emacs-version))
+           ___prefix______sep___version emacs-version)
+  (browse-url "https://github.com/___github_user_name___/___package_name___/issues/new"))
 (defun ___prefix______sep___customize ()
   "Open the customization menu in the `___package_name___' group."
   (interactive)
