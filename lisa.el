@@ -220,9 +220,14 @@ These are variables of which Lisa keeps track for you, so they
 can be used in yasnippets or in your own customization code, and
 Lisa can update them for you (when the version number changes).
 
+The package name and version are used in the \"defcustom\"
+snippet, invokable by typing \"(dc\" then \\[yas-expand].
+The prefix and separator are also used with the \"defun\"
+snippet, invokable by typing \"(df\" then \\[yas-expand].
+
 The first three can also be quickly inserted with yasnippets.
-Just type pp, pv, or pn, and hit \\[yas-expand] (depends on
-yas-minor-mode being active)."
+Just type \"pp\", \"pv\", or \"pn\", and hit \\[yas-expand] (depends
+on yas-minor-mode being active)."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -317,14 +322,16 @@ still needs improving)."
 (define-key lisa-sub-map "b" 'eval-buffer)
 (define-key lisa-sub-map "d" 'eval-defun)
 (define-key lisa-sub-map "e" 'eval-expression)
-;; (define-key lisa-sub-map "l" 'eval-last-sexp)
+(define-key lisa-sub-map "l" 'eval-last-sexp)
 (define-key lisa-sub-map "p" 'eval-print-last-sexp)
 (define-key lisa-sub-map "r" 'eval-region)
-(define-key lisa-sub-map "n"      'lisa-define-package-variables)
-(define-key lisa-sub-map "#"      'lisa-define-package-variables)
-(define-key lisa-sub-map "l"      'lisa-insert-change-log)
-(define-key lisa-sub-map "f"     'lisa-find-or-define-function)
-(define-key lisa-sub-map "v"     'lisa-find-or-define-variable)
+(define-key lisa-sub-map "n" 'lisa-define-package-variables)
+(define-key lisa-sub-map "#" 'lisa-define-package-variables)
+(define-key lisa-sub-map "l" 'lisa-insert-change-log)
+(define-key lisa-sub-map "t" 'lisa-insert-template)
+(define-key lisa-sub-map "u" 'lisa-update-version-number)
+(define-key lisa-sub-map "f" 'lisa-find-or-define-function)
+(define-key lisa-sub-map "v" 'lisa-find-or-define-variable)
 
 (defcustom lisa-package-template-file (concat user-emacs-directory "lisa-package-template.elt")
   "File which Lisa will use as template for new packages.
@@ -362,7 +369,7 @@ doesn't exist, she will kindly offer to download it for you."
             (read-string "Is this the version number you wanted? "
                          lisa-default-version-number)))
     ;; Insert and fill in the template
-    (insert-file-contents-literally "~/.emacs.d/packages/template.elt")
+    (lisa--insert-or-download-template)
     (lisa--global-replace "___package_name___" lisa-package-name)
     (lisa--global-replace "___version___" lisa-package-version)
     (lisa--global-replace "___year___" yr)
@@ -374,6 +381,13 @@ doesn't exist, she will kindly offer to download it for you."
     (insert (or (read-string ("Would you like to write a short description? ")) "")) 
     (search-forward "; Keywords: ")
     (message "%s" (lisa--format "Thank you, §. Call me if you need anything."))))
+
+(defun lisa--insert-or-download-file (file)
+  ""
+  (if (file-readable-p file)
+      (insert-file-contents-literally file)
+    (y-or-n-p (lisa--format "It seems we don't have this template. May I fetch it for you, §?
+ (I'll download it from )"))))
 
 ;;;###autoload
 (define-minor-mode lisa-mode
