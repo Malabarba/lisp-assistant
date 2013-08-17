@@ -310,9 +310,9 @@ If at the beginning of a comment, uncomment it (though this part
 still needs improving)."
   (interactive)
   (if (looking-at ";")
-      (progn
-        (er/expand-region 1)
-        (uncomment-region (region-beginning) (region-end)))
+      ;; (progn
+      ;;   (er/expand-region 1)
+      ;;   (uncomment-region (region-beginning) (region-end)))
     (unless (looking-at "(")
       (lisa--backward-up-sexp))
     (mark-sexp)
@@ -444,7 +444,7 @@ doesn't exist, she will kindly offer to download it for you."
             (read-string "Is this the version number you wanted? "
                          lisa-default-version-number)))
     ;; Insert and fill in the template
-    (lisa--insert-or-download-template)
+    (lisa--insert-or-download-file lisa-package-template-file)
     (lisa--global-replace "___full_name___" lisa-full-name)
     (lisa--global-replace "___email___" lisa-email)
     (lisa--global-replace "___github_user_name___" lisa-github-username)
@@ -466,7 +466,7 @@ doesn't exist, she will kindly offer to download it for you."
       (insert-file-contents-literally file)
     (if (y-or-n-p (lisa--format "It seems we don't have this template. May I fetch it for you, §?
  (I'll download it from \"https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt\")"))        
-        (if (url-copy-file "https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt" "~/okokokok")
+        (if (url-copy-file "https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt" file)
             (insert-file-contents-literally file)
           (error "I'm sorry, something wrong happened with the download."))
       (error "I'm sorry I couldn't help. Perhaps you'd like to download the template yourself."))))
@@ -481,41 +481,65 @@ code.
 The usual way to turn it on is:
     (add-hook 'emacs-lisp-mode-hook 'lisa-mode)
 
-" nil " Lisa"
+Most useful functions are (see full keymap below for other functions):
+\\[lisa-insert-change-log]  `lisa-insert-change-log'
+\\[lisa-update-version-number]  `lisa-update-version-number'
+\\[lisa-find-or-define-function]  `lisa-find-or-define-function'
+\\[lisa-find-or-define-variable]  `lisa-find-or-define-variable'
 
-(if lisa-mode
-    (progn
-      ;; New package template
-      (if (lisa--should-template)
-          (lisa-insert-template)
-        (lisa-define-package-variables))
-      ;; Activate yasnippets
-      (when (and lisa--load-file-name (fboundp 'yas-reload-all))
-        (let ((dir (concat (file-name-directory lisa--load-file-name) "snippets")))
-          (unless (member dir yas-snippet-dirs)
-            (add-to-list 'yas-snippet-dirs dir)
-            (yas-reload-all))))
-      ;; Keymap
-      (setq lisa-mode-map '(keymap))
-      (define-key lisa-mode-map "l" 'lisa-lisa-map)
-      (define-key lisa-mode-map "e" 'lisa-eval-map)
-      (cond
-       ((or (eq lisa-helpful-keymap 'eval)
-            (eq lisa-helpful-keymap t))
-        (define-key lisa-mode-map "b" 'eval-buffer)
-        (define-key lisa-mode-map "d" 'eval-defun)
-        (define-key lisa-mode-map "e" 'eval-expression)
-        ;; (define-key lisa-mode-map "l" 'eval-last-sexp)
-        (define-key lisa-mode-map "p" 'eval-print-last-sexp)
-        (define-key lisa-mode-map "r" 'eval-region))
-       ((or (eq lisa-helpful-keymap 'lisa)
-            (eq lisa-helpful-keymap t))
-        (define-key lisa-mode-map "#" 'lisa-define-package-variables)
-        (define-key lisa-mode-map "l" 'lisa-insert-change-log)
-        (define-key lisa-mode-map "u" 'lisa-update-version-number)
-        (define-key lisa-mode-map "t" 'lisa-insert-template)
-        (define-key lisa-mode-map "f" 'lisa-find-or-define-function)
-        (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))))))
+Most useful yasnippets are:
+   (df ---> Expands to a full defun
+   (dc ---> Expands to a full defcustom
+See the snippets directory for more.
+
+These two snippets make use some package variables (see the doc
+of `lisa-define-package-variables' for more information). These
+variables make the snippets super useful, and they are
+automatically defined whenever you open an existing .el file or
+create one from a template. If you create your file from scratch,
+these won't be automatically defined, but you can use
+\\[lisa-define-package-variables] to redefine them.
+
+\\{lisa-mode-map}."
+  nil " Lisa"
+  '(("l" . lisa-lisa-map)
+    ("e" . lisa-eval-map))
+  :global nil
+  :group 'lisa
+  (if lisa-mode
+      (progn
+        ;; New package template
+        (if (lisa--should-template)
+            (lisa-insert-template)
+          (lisa-define-package-variables))
+        ;; Activate yasnippets
+        (when (and lisa--load-file-name (fboundp 'yas-reload-all))
+          (let ((dir (concat (file-name-directory lisa--load-file-name) "snippets")))
+            (when (file-directory-p dir)
+              (unless (member dir yas-snippet-dirs)
+                (add-to-list 'yas-snippet-dirs dir)
+                (yas-reload-all)))))
+        ;; Keymap
+        (setq lisa-mode-map '(keymap))
+        (define-key lisa-mode-map "l" lisa-lisa-map)
+        (define-key lisa-mode-map "e" lisa-eval-map)
+        (cond
+         ((or (eq lisa-helpful-keymap 'eval)
+              (eq lisa-helpful-keymap t))
+          (define-key lisa-mode-map "b" 'eval-buffer)
+          (define-key lisa-mode-map "d" 'eval-defun)
+          (define-key lisa-mode-map "e" 'eval-expression)
+          ;; (define-key lisa-mode-map "l" 'eval-last-sexp)
+          (define-key lisa-mode-map "p" 'eval-print-last-sexp)
+          (define-key lisa-mode-map "r" 'eval-region))
+         ((or (eq lisa-helpful-keymap 'lisa)
+              (eq lisa-helpful-keymap t))
+          (define-key lisa-mode-map "#" 'lisa-define-package-variables)
+          (define-key lisa-mode-map "l" 'lisa-insert-change-log)
+          (define-key lisa-mode-map "u" 'lisa-update-version-number)
+          (define-key lisa-mode-map "t" 'lisa-insert-template)
+          (define-key lisa-mode-map "f" 'lisa-find-or-define-function)
+          (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))))))
 
 
 (provide 'lisa)
