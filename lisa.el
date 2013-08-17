@@ -453,7 +453,7 @@ doesn't exist, she will kindly offer to download it for you."
             (read-string "Is this the version number you wanted? "
                          lisa-default-version-number)))
     ;; Insert and fill in the template
-    (lisa--insert-or-download-file lisa-package-template-file)
+    (lisa--insert-or-generate-package-template)
     (lisa--global-replace "___full_name___" lisa-full-name)
     (lisa--global-replace "___email___" lisa-email)
     (lisa--global-replace "___github_user_name___" lisa-github-username)
@@ -469,16 +469,21 @@ doesn't exist, she will kindly offer to download it for you."
     (search-forward "; Keywords: ")
     (message "%s" (lisa--format "Thank you, §. Call me if you need anything."))))
 
-(defun lisa--insert-or-download-file (file)
+(defun lisa--insert-or-generate-package-template (file)
   ""
+  (let ((file  lisa-package-template-file))
+    (unless (file-readable-p file)
+      (copy-file (lisa--original-template-file) file)))
   (if (file-readable-p file)
       (insert-file-contents-literally file)
-    (if (y-or-n-p (lisa--format "It seems we don't have this template. May I fetch it for you, §?
- (I'll download it from \"https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt\")"))        
-        (if (url-copy-file "https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt" file)
-            (insert-file-contents-literally file)
-          (error "I'm sorry, something wrong happened with the download."))
-      (error "I'm sorry I couldn't help. Perhaps you'd like to download the template yourself."))))
+    (y-or-n-p (lisa--format "I'm sorry, §. For some reason I couldn't create the template file in %s.\nI'll just use the one I have here, OK?")))
+    ;; (if (y-or-n-p (lisa--format "It seems we don't have this template. May I fetch it for you, §?
+    ;; (I'll download it from \"https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt\")"))        
+    ;;        (if (url-copy-file "https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt" file)
+    ;;            (insert-file-contents-literally file)
+    ;;          (error "I'm sorry, something wrong happened with the download."))
+    ;;      (error "I'm sorry I couldn't help. Perhaps you'd like to download the template yourself."))
+    ))
 
 ;;;###autoload
 (define-minor-mode lisa-mode
