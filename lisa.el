@@ -137,10 +137,13 @@ Leave this nil if you don't want to use it."
   "Lisa knows you want a template even if you don't ask.
 
 Guess whether this is such a moment."
-  (when lisa-package-directory
-    (unless (file-directory-p lisa-package-directory)
-      (error (lisa--format "I'm sorry §, but `lisa-package-directory' needs to be a directory.")))
-    (= (point-max) (point-min))))
+  (when (and lisa-package-directories
+             (= (point-max) (point-min))
+             (buffer-file-name))
+    (unless (listp lisa-package-directories) 
+      (error (lisa--format "I'm sorry §, but `lisa-package-directories' doesn't appear to be a list of directories.")))
+    (= 0 (string-match (regexp-opt (mapcar 'expand-file-name lisa-package-directories))
+                       (expand-file-name (buffer-file-name))))))
 
 ;;; ---------------------------------------------------------------------
 ;;; Package handling functions
@@ -152,8 +155,9 @@ paste it all at once with by calling this with a PREFIX argument.
 
 This is great for quickly using change-logs as commit messages in
 Magit (or similar). Just insert change logs as they're made, and
-when you're writting the commit message hit \\[universal-argument] \\[lisa-insert-template]
-to have it all inserted for you."
+when you're writting the commit message hit
+M-x `lisa-insert-full-change-log' to have it all inserted for
+you. (Or you could bind it to a key in your VC mode.)"
   (interactive "P")
   (let ((wasChanged (buffer-modified-p))
         neededDot)
@@ -380,21 +384,26 @@ under \"C-c l\" (or \"C-c e\", respectively)."
 (defcustom lisa-package-template-file (concat user-emacs-directory "lisa-package-template.elt")
   "File which Lisa will use as template for new packages.
 
-If file isn't found, Lisa kindly offers to download it for you."
+If file isn't found, Lisa creates it for you."
   :type 'file
   :group 'lisa
   :package-version '(lisa . "0.1"))
 
-(defcustom lisa-package-directory nil
+(defcustom lisa-package-directories nil
   "If this is nil, auto-insertion of templates is disabled.
 
-If this is a string, it should be a directory name. Any new
-\".el\" file created inside this directory tree will be
-automatically populated with a package template, which Lisa will
-then proceed to fill out for you.
+Otherwise it should be a list of directory names. Any new \".el\"
+file created inside one of these directories (or its subtree)
+will be automatically populated with a package template, which
+Lisa will then proceed to fill out for you.
 
 Even if this is nil you can still insert templates with
 \\[lisa-insert-template].
+
+For instance, if the value is '(\"~/.emacs.d/packages/\"),
+whenever you open an empty file (with a .el extension) inside
+that folder the function `lisa-insert-template' will be called
+automatically.
 
 IMPORTANT! Make sure your elpa directory (usually
 \"~/.emacs.d/elpa/\") is NOT inside this. Lisa is a very nice

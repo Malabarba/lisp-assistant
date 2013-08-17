@@ -1,0 +1,7 @@
+#name : advice template
+#contributor : Artur Malabarba
+#key : (da
+# --
+(defadvice ${1:function} (${2:after} ${3:`lisa-package-prefix``lisa-separator`$2-$1-advice} ${4:() }activate)
+"${5:Description}"
+$0

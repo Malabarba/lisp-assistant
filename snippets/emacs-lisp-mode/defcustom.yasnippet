@@ -1,0 +1,9 @@
+#name : custom variable template
+#contributor : Artur Malabarba
+#key : (dc
+# --
+(defcustom ${1:`lisa-package-prefix``lisa-separator`} ${2:Default Value}
+"${6:Doc}"
+:type '${3:boolean}
+:group '${4:`lisa-package-name`}
+:package-version '($4 . "${5:`lisa-package-version`}")$0
