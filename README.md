@@ -8,6 +8,9 @@ aid in lisp development. It defines:
   3. buffer-local variables which contain package data (package name,
      version number, etc),
   4. yasnippet templates to aid in developing lisp code.
+  
+[You should really whatch this screencast to understand how she can
+help you.]()
 
 Most useful functions are: 
   1. `lisa-insert-change-log`
