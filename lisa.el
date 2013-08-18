@@ -56,7 +56,7 @@
 ;; The best way to learn about all of these is to read the description
 ;; of lisa-mode (C-h f lisa-mode RET).
 ;;
-;; To get the most our of Lisa, you need to give her a bit of data to
+;; To get the most out of Lisa, you need to give her a bit of data to
 ;; work with, so here's a sample configuration:
 ;;
 ;;     (require 'lisa)
