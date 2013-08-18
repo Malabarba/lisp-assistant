@@ -124,14 +124,14 @@ Leave this nil if you don't want to use it."
   (while (search-forward str nil t)
     (replace-match rep nil t)))
 
-(defun lisa--format (sn)
+(defun lisa--format (sn &rest r)
   "Format the string to be polite."
   (unless lisa-name
     (setq lisa-name (car (split-string (user-full-name)))))
   (unless (and (stringp lisa-name)
                (< 0 (length lisa-name)))
     (setq lisa-name "Sir"))
-  (replace-regexp-in-string "§" lisa-name sn))
+  (replace-regexp-in-string "§" lisa-name (apply 'format sn r)))
 
 (defun lisa--should-template ()
   "Lisa knows you want a template even if you don't ask.
@@ -144,6 +144,24 @@ Guess whether this is such a moment."
       (error (lisa--format "I'm sorry §, but `lisa-package-directories' doesn't appear to be a list of directories.")))
     (= 0 (string-match (regexp-opt (mapcar 'expand-file-name lisa-package-directories))
                        (expand-file-name (buffer-file-name))))))
+
+(defun lisa--insert-or-generate-package-template (file)
+  ""
+  (let ((file  lisa-package-template-file))
+    (unless (file-readable-p file)
+      (copy-file (lisa--original-template-file) file)))
+  (if (file-readable-p file)
+      (insert-file-contents-literally file)
+    (if (y-or-n-p (lisa--format "I'm sorry, §. For some reason I couldn't create the template file in %s.
+I'll just use the one I have here, OK?" file))
+        (insert-file-contents-literally (lisa--original-template-file))
+      (message "I'm sorry I couldn't help. If you'd like to download the template yourself here's the URL:
+https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
+      nil)))
+
+(defun lisa--original-template-file ()
+  "Guess the location of our local template file, from which we create the user's file."
+  (concat (file-name-directory lisa--load-file-name) "lisa-package-template.elt"))
 
 ;;; ---------------------------------------------------------------------
 ;;; Package handling functions
@@ -266,9 +284,19 @@ on yas-minor-mode being active)."
         (setq lisa-separator (match-string-no-properties 1)))))
 
 ;;; ---------------------------------------------------------------------
-;;; General coding functions
+;;; General coding 
+(defcustom lisa-snippets-close-paren t
+  "Should Lisa close parens after expanding her special snippets?
+
+This should usually always be t.
+This is ignored (treated as nil) if paredit mode is active."
+  :type 'boolean
+  :group 'lisa
+  :package-version '(lisa . "0.1"))
+
 (defun lisa-find-or-define-function ()
   "Look at the symbol under point. If it's a defined function, go to it. If it isn't, go back to top level code and create a function with this name.
+
 This meant to aid your workflow. If you write in your code the
 name of a function you haven't defined yet, you can then just
 place point on its name and hit \\[lisa-find-or-define-function] and a yasnippet
@@ -441,49 +469,33 @@ doesn't exist, she will kindly offer to download it for you."
         (dt (format-time-string "%Y%m%d")))
     ;; Try to guess the variables
     (lisa-define-package-variables)
-    ;; Check if the prefix is what the user wants
-    (setq lisa-package-prefix 
-          (read-string (lisa--format "§, what is the package prefix? (tipically 2-4 letters) ")
-                       lisa-package-prefix))
-    (when (string= lisa-package-prefix "")
-      (setq lisa-package-prefix nil))
-    ;; Ask for an initial version number
-    (unless lisa-package-version
-      (setq lisa-package-version
-            (read-string "Is this the version number you wanted? "
-                         lisa-default-version-number)))
     ;; Insert and fill in the template
-    (lisa--insert-or-generate-package-template)
-    (lisa--global-replace "___full_name___" lisa-full-name)
-    (lisa--global-replace "___email___" lisa-email)
-    (lisa--global-replace "___github_user_name___" lisa-github-username)
-    (lisa--global-replace "___package_name___" lisa-package-name)
-    (lisa--global-replace "___version___" lisa-package-version)
-    (lisa--global-replace "___year___" yr)
-    (lisa--global-replace "___date___" dt)
-    (lisa--global-replace "___prefix___" (or lisa-package-prefix lisa-package-name))
-    (lisa--global-replace "___sep___" lisa-separator)
-    (goto-char (point-min))
-    (goto-char (line-end-position))
-    (insert (or (read-string ("Would you like to write a short description? ")) "")) 
-    (search-forward "; Keywords: ")
-    (message "%s" (lisa--format "Thank you, §. Call me if you need anything."))))
-
-(defun lisa--insert-or-generate-package-template (file)
-  ""
-  (let ((file  lisa-package-template-file))
-    (unless (file-readable-p file)
-      (copy-file (lisa--original-template-file) file)))
-  (if (file-readable-p file)
-      (insert-file-contents-literally file)
-    (y-or-n-p (lisa--format "I'm sorry, §. For some reason I couldn't create the template file in %s.\nI'll just use the one I have here, OK?")))
-    ;; (if (y-or-n-p (lisa--format "It seems we don't have this template. May I fetch it for you, §?
-    ;; (I'll download it from \"https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt\")"))        
-    ;;        (if (url-copy-file "https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt" file)
-    ;;            (insert-file-contents-literally file)
-    ;;          (error "I'm sorry, something wrong happened with the download."))
-    ;;      (error "I'm sorry I couldn't help. Perhaps you'd like to download the template yourself."))
-    ))
+    (when (lisa--insert-or-generate-package-template)
+      ;; Check if the prefix is what the user wants
+      (setq lisa-package-prefix 
+            (read-string (lisa--format "§, what is the package prefix? (tipically 2-4 letters) ")
+                         lisa-package-prefix))
+      (when (string= lisa-package-prefix "")
+        (setq lisa-package-prefix nil))
+      ;; Ask for an initial version number
+      (unless lisa-package-version
+        (setq lisa-package-version
+              (read-string "Is this the version number you wanted? "
+                           lisa-default-version-number)))
+      (lisa--global-replace "___full_name___" lisa-full-name)
+      (lisa--global-replace "___email___" lisa-email)
+      (lisa--global-replace "___github_user_name___" lisa-github-username)
+      (lisa--global-replace "___package_name___" lisa-package-name)
+      (lisa--global-replace "___version___" lisa-package-version)
+      (lisa--global-replace "___year___" yr)
+      (lisa--global-replace "___date___" dt)
+      (lisa--global-replace "___prefix___" (or lisa-package-prefix lisa-package-name))
+      (lisa--global-replace "___sep___" lisa-separator)
+      (goto-char (point-min))
+      (goto-char (line-end-position))
+      (insert (or (read-string ("Would you like to write a short description? ")) "")) 
+      (search-forward "; Keywords: ")
+      (message "%s" (lisa--format "Thank you, §. Call me if you need anything.")))))
 
 ;;;###autoload
 (define-minor-mode lisa-mode
@@ -522,39 +534,46 @@ these won't be automatically defined, but you can use
   :group 'lisa
   (if lisa-mode
       (progn
-        ;; New package template
-        (if (lisa--should-template)
-            (lisa-insert-template)
-          (lisa-define-package-variables))
         ;; Activate yasnippets
         (when (and lisa--load-file-name (fboundp 'yas-reload-all))
           (let ((dir (concat (file-name-directory lisa--load-file-name) "snippets")))
             (when (file-directory-p dir)
               (unless (member dir yas-snippet-dirs)
-                (add-to-list 'yas-snippet-dirs dir)
+                (add-to-list 'yas-snippet-dirs dir t)
+                (add-hook 'yas-after-exit-snippet-hook 'lisa--insert-colosing-paren-before-expand)
                 (yas-reload-all)))))
         ;; Keymap
         (setq lisa-mode-map '(keymap))
         (define-key lisa-mode-map "l" lisa-lisa-map)
         (define-key lisa-mode-map "e" lisa-eval-map)
-        (cond
-         ((or (eq lisa-helpful-keymap 'eval)
-              (eq lisa-helpful-keymap t))
+        (when (or (eq lisa-helpful-keymap 'eval)
+                  (eq lisa-helpful-keymap t))
           (define-key lisa-mode-map "b" 'eval-buffer)
           (define-key lisa-mode-map "d" 'eval-defun)
           (define-key lisa-mode-map "e" 'eval-expression)
           ;; (define-key lisa-mode-map "l" 'eval-last-sexp)
           (define-key lisa-mode-map "p" 'eval-print-last-sexp)
           (define-key lisa-mode-map "r" 'eval-region))
-         ((or (eq lisa-helpful-keymap 'lisa)
-              (eq lisa-helpful-keymap t))
+        (when (or (eq lisa-helpful-keymap 'lisa)
+                  (eq lisa-helpful-keymap t))
           (define-key lisa-mode-map "#" 'lisa-define-package-variables)
           (define-key lisa-mode-map "l" 'lisa-insert-change-log)
           (define-key lisa-mode-map "u" 'lisa-update-version-number)
           (define-key lisa-mode-map "t" 'lisa-insert-template)
           (define-key lisa-mode-map "f" 'lisa-find-or-define-function)
-          (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))))))
+          (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))
+        ;; New package template
+        (if (lisa--should-template)
+            (lisa-insert-template)
+          (lisa-define-package-variables)))))
 
+(defun lisa--insert-colosing-paren-before-expand ()
+  "Runs in `yas-before-expand-snippet-hook'."
+  (when (and lisa-mode
+             lisa-snippets-close-paren
+             (not (and (boundp 'paredit-mode) paredit-mode)))
+    (insert ")")
+    (forward-char -1)))
 
 (provide 'lisa)
 ;;; lisa.el ends here.
