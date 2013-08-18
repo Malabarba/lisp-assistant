@@ -1,0 +1,8 @@
+#name : group template
+#contributor : Artur Malabarba
+#key : (dg
+# --
+(defgroup ${1:`lisa-package-name`} ${2:Members}
+"${5:Customization group for `lisa-package-name`.}"
+${3::prefix `lisa-package-prefix`}
+:package-version '(`lisa-package-name` . "${4:`lisa-package-version`}")$0
