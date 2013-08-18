@@ -18,7 +18,7 @@
 ;; aid in lisp development. It defines:
 ;;   1. a few useful functions,
 ;;   2. keybindings for these functions,
-;;   3. buffer-local variables which contain package data (line name and version number),
+;;   3. buffer-local variables which contain package data (package name, version number, etc),
 ;;   4. yasnippet templates to aid in developing lisp code.
 ;; 
 ;; Most useful functions are: 
@@ -29,6 +29,7 @@
 ;; (see the `lisa-mode' function description for the others)
 ;; 
 ;; Most useful yasnippets are:
+;; 
 ;;     (df ---> Expands to a full defun
 ;;     (dc ---> Expands to a full defcustom
 ;; (see the `lisa-mode' function description for the others)
