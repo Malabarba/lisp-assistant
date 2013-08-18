@@ -163,6 +163,24 @@ https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
   "Guess the location of our local template file, from which we create the user's file."
   (concat (file-name-directory lisa--load-file-name) "lisa-package-template.elt"))
 
+(defun lisa--umcomment-block ()
+  "Uncomment as many lines as possible."
+  (let ((opoint  (point))
+        beg end)
+    (save-excursion
+      (forward-line 0)
+      (while (looking-at "^ *;+") (forward-line -1))
+      (unless (= opoint (point))
+        (forward-line 1)
+        (setq beg  (point)))
+      (goto-char opoint)
+      (forward-line 0)
+      (while (looking-at "^ *;+") (forward-line 1))
+      (unless (= opoint (point))
+        (setq end  (point)))
+      (when (and beg  end)
+        (comment-region beg end '(4))))))
+
 ;;; ---------------------------------------------------------------------
 ;;; Package handling functions
 (defun lisa-insert-change-log (prefix &optional log)
@@ -341,10 +359,10 @@ If the variable under point is already defined this just calls
 If at the beginning of a comment, uncomment it (though this part
 still needs improving)."
   (interactive)
-  (if (looking-at ";")
-      ;; (progn
-      ;;   (er/expand-region 1)
-      ;;   (uncomment-region (region-beginning) (region-end)))
+  (if (string-match "^ *;+" (buffer-substring-no-properties (line-beginning-position) (line-end-position))) 
+      (lisa--umcomment-block)
+    (when (string-match ";" (buffer-substring-no-properties (line-beginning-position) (point)))
+      (goto-char (match-beginning 0)))
     (unless (looking-at "(")
       (lisa--backward-up-sexp))
     (mark-sexp)
@@ -376,6 +394,7 @@ still needs improving)."
 (define-key lisa-lisa-map "u" 'lisa-update-version-number)
 (define-key lisa-lisa-map "f" 'lisa-find-or-define-function)
 (define-key lisa-lisa-map "v" 'lisa-find-or-define-variable)
+(define-key lisa-lisa-map "c" 'lisa-comment-sexp)
 (defcustom lisa-helpful-keymap nil
   "Whether Lisa's keymap should prefer being helpful or unobstrusive.
 
@@ -531,7 +550,7 @@ these won't be automatically defined, but you can use
   '(("l" . lisa-lisa-map)
     ("e" . lisa-eval-map))
   :global nil
-  :group 'lisa
+  :group 'lisa 
   (if lisa-mode
       (progn
         ;; Activate yasnippets
@@ -539,6 +558,7 @@ these won't be automatically defined, but you can use
           (let ((dir (concat (file-name-directory lisa--load-file-name) "snippets")))
             (when (file-directory-p dir)
               (unless (member dir yas-snippet-dirs)
+                ;; Append so where're not treated as user library
                 (add-to-list 'yas-snippet-dirs dir t)
                 (add-hook 'yas-after-exit-snippet-hook 'lisa--insert-colosing-paren-before-expand)
                 (yas-reload-all)))))
@@ -546,6 +566,7 @@ these won't be automatically defined, but you can use
         (setq lisa-mode-map '(keymap))
         (define-key lisa-mode-map "l" lisa-lisa-map)
         (define-key lisa-mode-map "e" lisa-eval-map)
+        (define-key lisa-mode-map (kbd "C-c C-;") 'lisa-comment-sexp)
         (when (or (eq lisa-helpful-keymap 'eval)
                   (eq lisa-helpful-keymap t))
           (define-key lisa-mode-map "b" 'eval-buffer)
@@ -558,7 +579,9 @@ these won't be automatically defined, but you can use
                   (eq lisa-helpful-keymap t))
           (define-key lisa-mode-map "#" 'lisa-define-package-variables)
           (define-key lisa-mode-map "l" 'lisa-insert-change-log)
+          (define-key lisa-mode-map "l" 'lisa-insert-change-log)
           (define-key lisa-mode-map "u" 'lisa-update-version-number)
+          (define-key lisa-mode-map "c" 'lisa-comment-sexp)
           (define-key lisa-mode-map "t" 'lisa-insert-template)
           (define-key lisa-mode-map "f" 'lisa-find-or-define-function)
           (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))
