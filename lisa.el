@@ -12,14 +12,62 @@
 
 ;;; Commentary:
 ;; 
+;; Meet Lisa, your Lisp Assistant.
+;;
+;; `lisa-mode' is a minor-mode which defines a series of features to
+;; aid in lisp development. It defines:
+;;   1. a few useful functions,
+;;   2. keybindings for these functions,
+;;   3. buffer-local variables which contain package data (line name and version number),
+;;   4. yasnippet templates to aid in developing lisp code.
 ;; 
+;; Most useful functions are: 
+;;   1. `lisa-insert-change-log'
+;;   2. `lisa-update-version-number'
+;;   3. `lisa-find-or-define-function'
+;;   4. `lisa-find-or-define-variable'
+;; (see the `lisa-mode' function description for the others)
+;; 
+;; Most useful yasnippets are:
+;;     (df ---> Expands to a full defun
+;;     (dc ---> Expands to a full defcustom
+;; (see the `lisa-mode' function description for the others)
+;; 
+;; These two snippets make use of some package variables (see the doc
+;; of `lisa-define-package-variables' for more information). These
+;; variables make the snippets super useful, and they are
+;; automatically defined whenever you open an existing .el file or
+;; create one from a template. If you create your file from scratch,
+;; these won't be automatically defined, but you can use
+;; `lisa-define-package-variables' to redefine them.
 
 ;;; Instructions:
 ;;
 ;; INSTALLATION
 ;;
-;; If you install from melpa: nothing necessary, should work out of the box.
-;; If you install manually: (require 'lisa)
+;; The most basic installation process it to contact Lisa and then hire her:
+;; 
+;;     (require 'lisa)
+;;     (add-hook 'emacs-lisp-mode-hook 'lisa-mode)
+;;
+;; This will define several useful functions, the lisa-mode-map, and
+;; the snippets.
+;;
+;; The best way to learn about all of these is to read the description
+;; of lisa-mode (C-h f lisa-mode RET).
+;;
+;; To get the most our of Lisa, you need to give her a bit of data to
+;; work with, so here's a sample configuration:
+;;
+;;     (require 'lisa)
+;;     (setq lisa-helpful-keymap t)
+;;     (setq lisa-github-username "BruceConnor")
+;;     (setq lisa-name "Sir")
+;;     (setq lisa-package-directories '("~/.emacs.d/packages/" "~/Git-Projects/"))
+;;     (setq lisa-email "bruce.connor.am@gmail.com")
+;;     (define-key lisa-mode-map (kbd "C-;") 'lisa-comment-sexp)
+;;     (add-hook 'emacs-lisp-mode-hook 'lisa-mode)
+
 
 ;;; License:
 ;;
@@ -145,25 +193,26 @@ Guess whether this is such a moment."
     (= 0 (string-match (regexp-opt (mapcar 'expand-file-name lisa-package-directories))
                        (expand-file-name (buffer-file-name))))))
 
-(defun lisa--insert-or-generate-package-template (file)
+(defun lisa--insert-or-generate-package-template ()
   ""
-  (let ((file  lisa-package-template-file))
+  (let ((file lisa-package-template-file))
     (unless (file-readable-p file)
-      (copy-file (lisa--original-template-file) file)))
-  (if (file-readable-p file)
-      (insert-file-contents-literally file)
-    (if (y-or-n-p (lisa--format "I'm sorry, §. For some reason I couldn't create the template file in %s.
+      (make-directory (file-name-directory (expand-file-name file)) :parents)
+      (copy-file (lisa--original-template-file) file))
+    (if (file-readable-p file)
+        (insert-file-contents-literally file)
+      (if (y-or-n-p (lisa--format "I'm sorry, §. For some reason I couldn't create the template file in %s.
 I'll just use the one I have here, OK?" file))
-        (insert-file-contents-literally (lisa--original-template-file))
-      (message "I'm sorry I couldn't help. If you'd like to download the template yourself here's the URL:
+          (insert-file-contents-literally (lisa--original-template-file))
+        (message "I'm sorry I couldn't help. If you'd like to download the template yourself here's the URL:
 https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
-      nil)))
+        nil))))
 
 (defun lisa--original-template-file ()
   "Guess the location of our local template file, from which we create the user's file."
   (concat (file-name-directory lisa--load-file-name) "lisa-package-template.elt"))
 
-(defun lisa--umcomment-block ()
+(defun lisa--umcomment-block ()         ;Thanks to Drew on http://stackoverflow.com/a/18294344/491532
   "Uncomment as many lines as possible."
   (let ((opoint  (point))
         beg end)
@@ -179,7 +228,11 @@ https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
       (unless (= opoint (point))
         (setq end  (point)))
       (when (and beg  end)
-        (comment-region beg end '(4))))))
+        (uncomment-region beg end)
+        (goto-char beg)
+        (forward-sexp 1)
+        (when (looking-at "[\n\r[:space:]]+)") 
+          (delete-indentation 1))))))
 
 ;;; ---------------------------------------------------------------------
 ;;; Package handling functions
@@ -358,11 +411,13 @@ If the variable under point is already defined this just calls
 
 If at the beginning of a comment, uncomment it (though this part
 still needs improving)."
-  (interactive)
+  (interactive) ;;If this whole line is a comment.
   (if (string-match "^ *;+" (buffer-substring-no-properties (line-beginning-position) (line-end-position))) 
       (lisa--umcomment-block)
-    (when (string-match ";" (buffer-substring-no-properties (line-beginning-position) (point)))
-      (goto-char (match-beginning 0)))
+    (when (eq (or (get-char-property (point) 'read-face-name)
+                  (get-char-property (point) 'face))
+              'font-lock-comment-face)
+      (indent-for-comment))
     (unless (looking-at "(")
       (lisa--backward-up-sexp))
     (mark-sexp)
@@ -512,7 +567,7 @@ doesn't exist, she will kindly offer to download it for you."
       (lisa--global-replace "___sep___" lisa-separator)
       (goto-char (point-min))
       (goto-char (line-end-position))
-      (insert (or (read-string ("Would you like to write a short description? ")) "")) 
+      (insert (or (read-string "Would you like to write a short description? ") "")) 
       (search-forward "; Keywords: ")
       (message "%s" (lisa--format "Thank you, §. Call me if you need anything.")))))
 
@@ -535,9 +590,9 @@ Most useful functions are (see full keymap below for other functions):
 Most useful yasnippets are:
    (df ---> Expands to a full defun
    (dc ---> Expands to a full defcustom
-See the snippets directory for more.
+ (for the others, read after the keymap description below).
 
-These two snippets make use some package variables (see the doc
+These two snippets make use of some package variables (see the doc
 of `lisa-define-package-variables' for more information). These
 variables make the snippets super useful, and they are
 automatically defined whenever you open an existing .el file or
@@ -545,10 +600,24 @@ create one from a template. If you create your file from scratch,
 these won't be automatically defined, but you can use
 \\[lisa-define-package-variables] to redefine them.
 
-\\{lisa-mode-map}."
+\\{lisa-mode-map}.
+
+snippet         expansion
+-------         ---------
+ (df            (defun ...)
+ (dc            (defcustom ...)
+ (dm            (defmacro ...)
+ (da            (defadvice ...)
+ (dg            (defgroup ...)
+ (dk            (define-key ...)
+ (dv            (defvar ...)
+ (dco           (defconst ...)
+ (dfa           (defface ...)
+"
   nil " Lisa"
   '(("l" . lisa-lisa-map)
-    ("e" . lisa-eval-map))
+    ("e" . lisa-eval-map)
+    ([3 67108923] . lisa-comment-sexp)) ;C-c C-;
   :global nil
   :group 'lisa 
   (if lisa-mode
@@ -563,10 +632,9 @@ these won't be automatically defined, but you can use
                 (add-hook 'yas-after-exit-snippet-hook 'lisa--insert-colosing-paren-before-expand)
                 (yas-reload-all)))))
         ;; Keymap
-        (setq lisa-mode-map '(keymap))
+        ;; (setq lisa-mode-map '(keymap))
         (define-key lisa-mode-map "l" lisa-lisa-map)
         (define-key lisa-mode-map "e" lisa-eval-map)
-        (define-key lisa-mode-map (kbd "C-c C-;") 'lisa-comment-sexp)
         (when (or (eq lisa-helpful-keymap 'eval)
                   (eq lisa-helpful-keymap t))
           (define-key lisa-mode-map "b" 'eval-buffer)
@@ -579,9 +647,8 @@ these won't be automatically defined, but you can use
                   (eq lisa-helpful-keymap t))
           (define-key lisa-mode-map "#" 'lisa-define-package-variables)
           (define-key lisa-mode-map "l" 'lisa-insert-change-log)
-          (define-key lisa-mode-map "l" 'lisa-insert-change-log)
           (define-key lisa-mode-map "u" 'lisa-update-version-number)
-          (define-key lisa-mode-map "c" 'lisa-comment-sexp)
+          ;; (define-key lisa-mode-map "c" 'lisa-comment-sexp)
           (define-key lisa-mode-map "t" 'lisa-insert-template)
           (define-key lisa-mode-map "f" 'lisa-find-or-define-function)
           (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))
