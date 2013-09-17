@@ -326,6 +326,18 @@ containing the version number."
                        nil nil nil 1)))
   (lisa--success))
 
+(defun lisa--report-changed (cell)
+  "Take an (old-value . symbol) cons cell, check if value changed, and return a string reporting it."
+  (let* ((ov (car cell))
+         (sy (cdr cell))
+         (nv (eval sy)))
+    (if (equal ov nv)
+        ""
+      (format "%s set to %s.\n"
+              (propertize (symbol-name sy) 'face font-lock-function-name-face)
+              (propertize nv 'face font-lock-string-face)))))
+
+
 (defun lisa-define-package-variables ()
   "Guess package-specific variables from file name and content.
 
@@ -345,26 +357,36 @@ The first three can also be quickly inserted with yasnippets.
 Just type \"pp\", \"pv\", or \"pn\", and hit \\[yas-expand] (depends
 on yas-minor-mode being active)."
   (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (setq lisa-package-name (if (search-forward-regexp "^(provide '\\([^)]+\\))" nil t)
-                                (match-string-no-properties 1)
-                              (file-name-base (or (buffer-file-name)
-                                                  (buffer-name) ""))))
-    (goto-char (point-min))
-    (setq lisa-package-prefix
-          (if (search-forward-regexp "^;;+ +\\(Prefix\\|ShortName\\): +\\([-/:a-zA-Z0-9\.]+\\)" nil t)
-              (match-string-no-properties 1)
-            (mapconcat (lambda (s) (substring s 0 1))
-                       (split-string lisa-package-name "-" :omit-nulls)
-                       "")))
-    (goto-char (point-min))
-    (setq lisa-package-version
-          (if (search-forward-regexp "^;;+ +Version: +\\([0-9a-zA-Z\.]+\\)" nil t)
-              (match-string-no-properties 1) nil))
-    (goto-char (point-min))
-    (if (search-forward-regexp "^;;+ +Separator: +\\([^ \n',`(){}]+\\)" nil t)
-        (setq lisa-separator (match-string-no-properties 1)))))
+  (let ((vo lisa-package-version)
+        (no lisa-package-name)
+        (po lisa-package-prefix)
+        (so lisa-separator))
+    (save-excursion
+      (goto-char (point-min))
+      (setq lisa-package-name (if (search-forward-regexp "^(provide '\\([^)]+\\))" nil t)
+                                  (match-string-no-properties 1)
+                                (file-name-base (or (buffer-file-name)
+                                                    (buffer-name) ""))))
+      (goto-char (point-min))
+      (setq lisa-package-prefix
+            (if (search-forward-regexp "^;;+ +\\(Prefix\\|ShortName\\): +\\([-/:a-zA-Z0-9\.]+\\)" nil t)
+                (match-string-no-properties 2)
+              (mapconcat (lambda (s) (substring s 0 1))
+                         (split-string lisa-package-name "-" :omit-nulls)
+                         "")))
+      (goto-char (point-min))
+      (setq lisa-package-version
+            (if (search-forward-regexp "^;;+ +Version: +\\([0-9a-zA-Z\.]+\\)" nil t)
+                (match-string-no-properties 1) nil))
+      (goto-char (point-min))
+      (if (search-forward-regexp "^;;+ +Separator: +\\([^ \n',`(){}]+\\)" nil t)
+          (setq lisa-separator (match-string-no-properties 1))))
+    (message "%s"
+             (mapconcat 'lisa--report-changed
+                        (list (cons vo 'lisa-package-version)
+                              (cons no 'lisa-package-name)
+                              (cons po 'lisa-package-prefix)
+                              (cons so 'lisa-separator)) ""))))
 
 ;;; ---------------------------------------------------------------------
 ;;; General coding 
