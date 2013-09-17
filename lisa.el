@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.1
+;; Version: 0.5
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,8 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5 - 20130822 - Improved it a little more.
+;; 0.5 - 20130822 - Improved change logs a little bit
 ;; 0.1 - 20130815 - Perfected keymap.
 ;; 0.1 - 20130815 - Greatly improved doc.
 ;; 0.1 - 20130815 - Started creating the minor mode.
@@ -94,8 +96,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.1" "Version of the lisa.el package.")
-(defconst lisa-version-int 1 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.5" "Version of the lisa.el package.")
+(defconst lisa-version-int 2 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -285,7 +287,12 @@ Could you insert the string \";;; Change Log:\n\" somewhere?")))
   "Insert under point all the change-log lines you previously inserted (with `lisa-insert-change-log').
 
 This is great for quickly using change-logs as commit messages in
-Magit (or similar)."
+Magit (or similar). You might want it to be called automatically
+when you're editing a commit, just do:
+
+    (add-hook 'git-commit-mode-hook 'lisa-insert-full-change-log)
+
+Note this hook only exists in newer versions of Magit."
   (interactive)
   (unless (= 0 (length lisa-package-change-log))
     (setq lisa--package-change-log lisa-package-change-log)
