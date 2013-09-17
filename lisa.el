@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.5
+;; Version: 0.5.1
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.1 - 20130917 - Improve insert-full-changelog
 ;; 0.5 - 20130822 - Improved it a little more.
 ;; 0.5 - 20130822 - Improved change logs a little bit
 ;; 0.1 - 20130815 - Perfected keymap.
@@ -96,8 +97,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.5" "Version of the lisa.el package.")
-(defconst lisa-version-int 2 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.5.1" "Version of the lisa.el package.")
+(defconst lisa-version-int 3 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -297,7 +298,9 @@ Note this hook only exists in newer versions of Magit."
   (unless (= 0 (length lisa-package-change-log))
     (setq lisa--package-change-log lisa-package-change-log)
     (setq lisa-package-change-log  ""))
-  (insert lisa--package-change-log)
+  (save-excursion
+    (insert lisa--package-change-log))
+  (when (looking-at "$") (delete-char 1))
   (lisa--success))
 
 (defun lisa-update-version-number ()
