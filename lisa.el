@@ -254,27 +254,31 @@ you. (Or you could bind it to a key in your VC mode.)"
     (when prefix (lisa-insert-full-change-log))
     (if (called-interactively-p 'interactive)
         (setq log (read-string (lisa--format "Of course. What did you change, §? "))))
-    (goto-char (point-min))
-    (unless (search-forward-regexp "^;;+ +Change Log: *\n" nil t)
-      (goto-char (point-min))
-      (unless (search-forward-regexp "^;;;+ +Code:" nil t)
-        (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
+    (push-mark)
+    (goto-char 
+     (save-excursion
+       (goto-char (point-min))
+       (unless (search-forward-regexp "^;;+ +Change Log: *\n" nil t)
+         (goto-char (point-min))
+         (unless (search-forward-regexp "^;;;+ +Code:" nil t)
+           (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
 Could you insert the string \";;; Change Log:\n\" somewhere?")))
-      (forward-line -1)
-      (insert ";;; Change Log:\n"))
-    (insert "\n")
-    (forward-char -1)
-    (insert ";; " lisa-package-version " - "
-            (format-time-string "%Y%m%d") 
-            " - ")
-    (save-excursion
-      (insert log)
-      (unless (looking-back "\.")
-        (setq neededDot t)
-        (insert ".")))
-    (setq lisa-package-change-log
-          (concat lisa-package-change-log "\n" log (if neededDot "." "")))
-    (unless wasChanged (save-buffer)))
+         (forward-line -1)
+         (insert ";;; Change Log:\n"))
+       (insert "\n")
+       (forward-char -1)
+       (insert ";; " lisa-package-version " - "
+               (format-time-string "%Y%m%d") 
+               " - ")
+       (save-excursion
+         (insert log)
+         (unless (looking-back "\.")
+           (setq neededDot t)
+           (insert ".")))
+       (setq lisa-package-change-log
+             (concat lisa-package-change-log "\n" log (if neededDot "." "")))
+       (unless wasChanged (save-buffer))
+       (point))))
   (lisa--success))
 
 (defun lisa-insert-full-change-log ()
@@ -342,7 +346,7 @@ on yas-minor-mode being active)."
                                                   (buffer-name) ""))))
     (goto-char (point-min))
     (setq lisa-package-prefix
-          (if (search-forward-regexp "^;;+ +Prefix: +\\([-/:a-zA-Z0-9\.]+\\)" nil t)
+          (if (search-forward-regexp "^;;+ +\\(Prefix\\|ShortName\\): +\\([-/:a-zA-Z0-9\.]+\\)" nil t)
               (match-string-no-properties 1)
             (mapconcat (lambda (s) (substring s 0 1))
                        (split-string lisa-package-name "-" :omit-nulls)
@@ -402,6 +406,8 @@ If the variable under point is already defined this just calls
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
       (beginning-of-defun)
+      (when (looking-back "^;;;###autoload\\s-*\n")
+        (forward-line -1))
       (insert "(dc)\n\n")
       (backward-char 3)
       (yas-expand)
