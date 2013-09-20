@@ -386,11 +386,22 @@ If the function under point is already defined this just calls
       (find-function (function-called-at-point))
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
-      (end-of-defun)
-      (insert "\n(df)\n")
-      (backward-char 2)
-      (yas-expand)
-      (insert name))))
+      (unless (lisa--find-in-buffer (concat "(defun " name))
+        (end-of-defun)
+        (insert "\n(df)\n")
+        (backward-char 2)
+        (yas-expand)
+        (insert name)))))
+
+(defun lisa--find-in-buffer (x)
+  "Find the string X somewhere in this buffer."
+  (let ((l (save-excursion
+             (goto-char (point-min))
+             (search-forward x nil :noerror)
+             (match-beginning 0))))
+    (when l
+      (goto-char l)
+      l)))
 
 (defun lisa-find-or-define-variable ()
   "Look at the symbol under point. If it's a defined variable, go to it. If it isn't, go back to top level code and create a variable with this name.
@@ -406,11 +417,12 @@ If the variable under point is already defined this just calls
       (find-variable (variable-at-point))
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
-      (beginning-of-defun)
-      (insert "(dc)\n\n")
-      (backward-char 3)
-      (yas-expand)
-      (insert name))))
+      (unless (lisa--find-in-buffer (concat "(defun " name))
+        (beginning-of-defun)
+        (insert "(dc)\n\n")
+        (backward-char 3)
+        (yas-expand)
+        (insert name)))))
 
 (defun lisa-comment-sexp ()
   "Move to beginning of current sexp and comment it.
