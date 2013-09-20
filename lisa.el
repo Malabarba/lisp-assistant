@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.5
+;; Version: 0.5.1
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.1 - 20130917 - Improve insert-full-changelog
 ;; 0.5 - 20130822 - Improved it a little more.
 ;; 0.5 - 20130822 - Improved change logs a little bit
 ;; 0.1 - 20130815 - Perfected keymap.
@@ -96,8 +97,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.5" "Version of the lisa.el package.")
-(defconst lisa-version-int 2 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.5.1" "Version of the lisa.el package.")
+(defconst lisa-version-int 3 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -256,25 +257,31 @@ you. (Or you could bind it to a key in your VC mode.)"
     (when prefix (lisa-insert-full-change-log))
     (if (called-interactively-p 'interactive)
         (setq log (read-string (lisa--format "Of course. What did you change, §? "))))
-    (unless (string-match "\\.\\'" log)
-      (setq log (concat log ".")))
-    (goto-char (point-min))
-    (unless (search-forward-regexp "^;;+ +Change Log: *\n" nil t)
-      (goto-char (point-min))
-      (unless (search-forward-regexp "^;;;+ +Code:" nil t)
-        (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
+    (push-mark)
+    (goto-char 
+     (save-excursion
+       (goto-char (point-min))
+       (unless (search-forward-regexp "^;;+ +Change Log: *\n" nil t)
+         (goto-char (point-min))
+         (unless (search-forward-regexp "^;;;+ +Code:" nil t)
+           (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
 Could you insert the string \";;; Change Log:\n\" somewhere?")))
-      (forward-line -1)
-      (insert ";;; Change Log:\n"))
-    (insert "\n")
-    (forward-char -1)
-    (insert ";; " lisa-package-version " - "
-            (format-time-string "%Y%m%d") 
-            " - ")
-    (save-excursion (insert log))
-    (setq lisa-package-change-log
-          (concat lisa-package-change-log log "\n"))
-    (unless wasChanged (save-buffer)))
+         (forward-line -1)
+         (insert ";;; Change Log:\n"))
+       (insert "\n")
+       (forward-char -1)
+       (insert ";; " lisa-package-version " - "
+               (format-time-string "%Y%m%d") 
+               " - ")
+       (save-excursion
+         (insert log)
+         (unless (looking-back "\.")
+           (setq neededDot t)
+           (insert ".")))
+       (setq lisa-package-change-log
+             (concat lisa-package-change-log "\n" log (if neededDot "." "")))
+       (unless wasChanged (save-buffer))
+       (point))))
   (lisa--success))
 
 (defun lisa-insert-full-change-log ()
@@ -291,7 +298,9 @@ Note this hook only exists in newer versions of Magit."
   (unless (= 0 (length lisa-package-change-log))
     (setq lisa--package-change-log lisa-package-change-log)
     (setq lisa-package-change-log  ""))
-  (insert lisa--package-change-log)
+  (save-excursion
+    (insert lisa--package-change-log))
+  (when (looking-at "$") (delete-char 1))
   (lisa--success))
 
 (defun lisa-update-version-number ()
@@ -320,6 +329,18 @@ containing the version number."
                        nil nil nil 1)))
   (lisa--success))
 
+(defun lisa--report-changed (cell)
+  "Take an (old-value . symbol) cons cell, check if value changed, and return a string reporting it."
+  (let* ((ov (car cell))
+         (sy (cdr cell))
+         (nv (eval sy)))
+    (if (equal ov nv)
+        ""
+      (format "%s set to %s.\n"
+              (propertize (symbol-name sy) 'face font-lock-function-name-face)
+              (propertize nv 'face font-lock-string-face)))))
+
+
 (defun lisa-define-package-variables ()
   "Guess package-specific variables from file name and content.
 
@@ -339,26 +360,36 @@ The first three can also be quickly inserted with yasnippets.
 Just type \"pp\", \"pv\", or \"pn\", and hit \\[yas-expand] (depends
 on yas-minor-mode being active)."
   (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (setq lisa-package-name (if (search-forward-regexp "^(provide '\\([^)]+\\))" nil t)
-                                (match-string-no-properties 1)
-                              (file-name-base (or (buffer-file-name)
-                                                  (buffer-name) ""))))
-    (goto-char (point-min))
-    (setq lisa-package-prefix
-          (if (search-forward-regexp "^;;+ +Prefix: +\\([-/:a-zA-Z0-9\.]+\\)" nil t)
-              (match-string-no-properties 1)
-            (mapconcat (lambda (s) (substring s 0 1))
-                       (split-string lisa-package-name "-" :omit-nulls)
-                       "")))
-    (goto-char (point-min))
-    (setq lisa-package-version
-          (if (search-forward-regexp "^;;+ +Version: +\\([0-9a-zA-Z\.]+\\)" nil t)
-              (match-string-no-properties 1) nil))
-    (goto-char (point-min))
-    (if (search-forward-regexp "^;;+ +Separator: +\\([^ \n',`(){}]+\\)" nil t)
-        (setq lisa-separator (match-string-no-properties 1)))))
+  (let ((vo lisa-package-version)
+        (no lisa-package-name)
+        (po lisa-package-prefix)
+        (so lisa-separator))
+    (save-excursion
+      (goto-char (point-min))
+      (setq lisa-package-name (if (search-forward-regexp "^(provide '\\([^)]+\\))" nil t)
+                                  (match-string-no-properties 1)
+                                (file-name-base (or (buffer-file-name)
+                                                    (buffer-name) ""))))
+      (goto-char (point-min))
+      (setq lisa-package-prefix
+            (if (search-forward-regexp "^;;+ +\\(Prefix\\|ShortName\\): +\\([-/:a-zA-Z0-9\.]+\\)" nil t)
+                (match-string-no-properties 2)
+              (mapconcat (lambda (s) (substring s 0 1))
+                         (split-string lisa-package-name "-" :omit-nulls)
+                         "")))
+      (goto-char (point-min))
+      (setq lisa-package-version
+            (if (search-forward-regexp "^;;+ +Version: +\\([0-9a-zA-Z\.]+\\)" nil t)
+                (match-string-no-properties 1) nil))
+      (goto-char (point-min))
+      (if (search-forward-regexp "^;;+ +Separator: +\\([^ \n',`(){}]+\\)" nil t)
+          (setq lisa-separator (match-string-no-properties 1))))
+    (message "%s"
+             (mapconcat 'lisa--report-changed
+                        (list (cons vo 'lisa-package-version)
+                              (cons no 'lisa-package-name)
+                              (cons po 'lisa-package-prefix)
+                              (cons so 'lisa-separator)) ""))))
 
 ;;; ---------------------------------------------------------------------
 ;;; General coding 
@@ -419,6 +450,8 @@ If the variable under point is already defined this just calls
     (let ((name (thing-at-point 'symbol)))
       (unless (lisa--find-in-buffer (concat "(defun " name))
         (beginning-of-defun)
+        (when (looking-back "^;;;###autoload\\s-*\n")
+          (forward-line -1))
         (insert "(dc)\n\n")
         (backward-char 3)
         (yas-expand)
