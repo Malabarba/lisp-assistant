@@ -1,0 +1,17 @@
+Hello, my name is Lisa. I'm here to help you write lisp code.
+
+Let's make a function.
+
+Great, but this variable needs a definition.
+
+Done. Now don't forget the group.
+
+See how fast that was?
+
+Let me update the version number.
+
+And make a change-log.
+
+I can even write your commit messages for you.
+
+Fantastic. We're gonna work great together.
