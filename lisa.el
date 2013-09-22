@@ -417,18 +417,19 @@ If the function under point is already defined this just calls
       (find-function (function-called-at-point))
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
-      (unless (lisa--find-in-buffer (concat "(defun " name))
+      (unless (lisa--find-in-buffer "(defun " name)
         (end-of-defun)
         (insert "\n(df)\n")
         (backward-char 2)
         (yas-expand)
         (insert name)))))
 
-(defun lisa--find-in-buffer (x)
+(defun lisa--find-in-buffer (r s)
   "Find the string X somewhere in this buffer."
   (let ((l (save-excursion
              (goto-char (point-min))
-             (search-forward x nil :noerror)
+             (search-forward-regexp (concat r (regexp-quote s))
+                                    nil :noerror)
              (match-beginning 0))))
     (when l
       (goto-char l)
@@ -448,7 +449,7 @@ If the variable under point is already defined this just calls
       (find-variable (variable-at-point))
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
-      (unless (lisa--find-in-buffer (concat "(defun " name))
+      (unless (lisa--find-in-buffer "(def\\(custom\\|const\\|var\\) " name)
         (beginning-of-defun)
         (when (looking-back "^;;;###autoload\\s-*\n")
           (forward-line -1))
