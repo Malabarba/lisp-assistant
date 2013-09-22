@@ -402,6 +402,17 @@ This is ignored (treated as nil) if paredit mode is active."
   :group 'lisa
   :package-version '(lisa . "0.1"))
 
+(defun lisa--find-in-buffer (r s)
+  "Find the string X somewhere in this buffer."
+  (let ((l (save-excursion
+             (goto-char (point-min))
+             (search-forward-regexp (concat r (regexp-quote s))
+                                    nil :noerror)
+             (match-beginning 0))))
+    (when l
+      (goto-char l)
+      l)))
+
 (defun lisa-find-or-define-function ()
   "Look at the symbol under point. If it's a defined function, go to it. If it isn't, go back to top level code and create a function with this name.
 
@@ -423,17 +434,6 @@ If the function under point is already defined this just calls
         (backward-char 2)
         (yas-expand)
         (insert name)))))
-
-(defun lisa--find-in-buffer (r s)
-  "Find the string X somewhere in this buffer."
-  (let ((l (save-excursion
-             (goto-char (point-min))
-             (search-forward-regexp (concat r (regexp-quote s))
-                                    nil :noerror)
-             (match-beginning 0))))
-    (when l
-      (goto-char l)
-      l)))
 
 (defun lisa-find-or-define-variable ()
   "Look at the symbol under point. If it's a defined variable, go to it. If it isn't, go back to top level code and create a variable with this name.
