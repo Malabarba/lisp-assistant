@@ -406,9 +406,10 @@ This is ignored (treated as nil) if paredit mode is active."
   "Find the string X somewhere in this buffer."
   (let ((l (save-excursion
              (goto-char (point-min))
-             (search-forward-regexp (concat r (regexp-quote s))
-                                    nil :noerror)
-             (match-beginning 0))))
+             (save-match-data
+               (when (search-forward-regexp (concat r (regexp-quote s))
+                                            nil :noerror)
+                 (match-beginning 0))))))
     (when l
       (goto-char l)
       l)))
