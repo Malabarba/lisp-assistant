@@ -409,6 +409,18 @@ This is ignored (treated as nil) if paredit mode is active."
   :group 'lisa
   :package-version '(lisa . "0.1"))
 
+(defun lisa--find-in-buffer (r s)
+  "Find the string X somewhere in this buffer."
+  (let ((l (save-excursion
+             (goto-char (point-min))
+             (save-match-data
+               (when (search-forward-regexp (concat r (regexp-quote s))
+                                            nil :noerror)
+                 (match-beginning 0))))))
+    (when l
+      (goto-char l)
+      l)))
+
 (defun lisa-find-or-define-function ()
   "Look at the symbol under point. If it's a defined function, go to it. If it isn't, go back to top level code and create a function with this name.
 
@@ -424,25 +436,16 @@ If the function under point is already defined this just calls
       (find-function (function-called-at-point))
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
-      (unless (lisa--find-in-buffer (concat "(defun " name))
+      (unless (lisa--find-in-buffer "(defun " name)
         (end-of-defun)
         (insert "\n(df)\n")
         (backward-char 2)
         (yas-expand)
         (insert name)))))
 
-(defun lisa--find-in-buffer (x)
-  "Find the string X somewhere in this buffer."
-  (let ((l (save-excursion
-             (goto-char (point-min))
-             (when (search-forward x nil :noerror)
-               (match-beginning 0)))))
-    (when l
-      (goto-char l)
-      l)))
-
 (defun lisa-find-or-define-variable (&optional prefix)
   "Look at the symbol under point. If it's a defined variable, go to it. If it isn't, go back to top level code and create a variable with this name.
+
 This meant to aid your workflow. If you write in your code the
 name of a variable you haven't defined yet, you can then just
 place point on its name and hit \\[lisa-find-or-define-variable] and a yasnippet
@@ -455,9 +458,7 @@ If the variable under point is already defined this just calls
       (find-variable (variable-at-point))
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
-      (unless (or (lisa--find-in-buffer (concat "(defcustom " name))
-                  (lisa--find-in-buffer (concat "(defvar " name))
-                  (lisa--find-in-buffer (concat "(defconst " name)))
+      (unless (lisa--find-in-buffer "(def\\(custom\\|const\\|var\\) " name)
         (beginning-of-defun)
         (when (looking-back "^;;;###autoload\\s-*\n")
           (forward-line -1))
