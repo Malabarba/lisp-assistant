@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.5.1
+;; Version: 0.5.2
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.2 - 20131002 - Fix insert-full-change-log
 ;; 0.5.1 - 20130917 - Improve insert-full-changelog
 ;; 0.5 - 20130822 - Improved it a little more.
 ;; 0.5 - 20130822 - Improved change logs a little bit
@@ -97,8 +98,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.5.1" "Version of the lisa.el package.")
-(defconst lisa-version-int 3 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.5.2" "Version of the lisa.el package.")
+(defconst lisa-version-int 4 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -284,7 +285,7 @@ Could you insert the string \";;; Change Log:\n\" somewhere?")))
        (point))))
   (lisa--success))
 
-(defun lisa-insert-full-change-log ()
+(defun lisa-insert-full-change-log (&optional do-insert)
   "Insert under point all the change-log lines you previously inserted (with `lisa-insert-change-log').
 
 This is great for quickly using change-logs as commit messages in
@@ -293,13 +294,19 @@ when you're editing a commit, just do:
 
     (add-hook 'git-commit-mode-hook 'lisa-insert-full-change-log)
 
-Note this hook only exists in newer versions of Magit."
-  (interactive)
+Note this hook only exists in newer versions of Magit.
+
+From lisp code, if DO-INSERT is non-nil, always perform the
+insertion. Otherwise (from lisp-code) only insert if this is the
+first call since last time `lisa-insert-change-log' was called."
+  (interactive '(t))
   (unless (= 0 (length lisa-package-change-log))
     (setq lisa--package-change-log lisa-package-change-log)
-    (setq lisa-package-change-log  ""))
-  (save-excursion
-    (insert lisa--package-change-log))
+    (setq lisa-package-change-log  "")
+    (setq do-insert t))
+  (when do-insert 
+    (save-excursion
+      (insert lisa--package-change-log)))
   (when (looking-at "$") (delete-char 1))
   (lisa--success))
 
@@ -428,13 +435,13 @@ If the function under point is already defined this just calls
   "Find the string X somewhere in this buffer."
   (let ((l (save-excursion
              (goto-char (point-min))
-             (search-forward x nil :noerror)
-             (match-beginning 0))))
+             (when (search-forward x nil :noerror)
+               (match-beginning 0)))))
     (when l
       (goto-char l)
       l)))
 
-(defun lisa-find-or-define-variable ()
+(defun lisa-find-or-define-variable (&optional prefix)
   "Look at the symbol under point. If it's a defined variable, go to it. If it isn't, go back to top level code and create a variable with this name.
 This meant to aid your workflow. If you write in your code the
 name of a variable you haven't defined yet, you can then just
@@ -443,16 +450,18 @@ defun will be inserted with point inside.
 
 If the variable under point is already defined this just calls
 `find-variable'."
-  (interactive)
+  (interactive "P")
   (if (symbolp (variable-at-point))
       (find-variable (variable-at-point))
     (push-mark)
     (let ((name (thing-at-point 'symbol)))
-      (unless (lisa--find-in-buffer (concat "(defun " name))
+      (unless (or (lisa--find-in-buffer (concat "(defcustom " name))
+                  (lisa--find-in-buffer (concat "(defvar " name))
+                  (lisa--find-in-buffer (concat "(defconst " name)))
         (beginning-of-defun)
         (when (looking-back "^;;;###autoload\\s-*\n")
           (forward-line -1))
-        (insert "(dc)\n\n")
+        (insert "(" (if prefix "dv" "dc") ")\n\n")
         (backward-char 3)
         (yas-expand)
         (insert name)))))
@@ -460,8 +469,7 @@ If the variable under point is already defined this just calls
 (defun lisa-comment-sexp ()
   "Move to beginning of current sexp and comment it.
 
-If at the beginning of a comment, uncomment it (though this part
-still needs improving)."
+If anywhere inside a comment, uncomment it."
   (interactive) ;;If this whole line is a comment.
   (if (string-match "^ *;+" (buffer-substring-no-properties (line-beginning-position) (line-end-position))) 
       (lisa--umcomment-block)
