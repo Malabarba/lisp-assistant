@@ -324,16 +324,20 @@ containing the version number."
       (setq lisa-package-version vo)
       (error "Couldn't find ';; Version:' comment. `lisa-package-version' variable not updated."))
     (if (search-forward-regexp
-         (concat "(defconst *" lisa-package-prefix lisa-separator "version *\"\\(" vo "\\)")
+         (concat "(defconst *\\(" lisa-package-prefix lisa-separator
+                 "\\|" lisa-package-name "-\\)"
+                 "version *\"\\([a-z0-9\.]+\\)")
          nil t)
-        (replace-match lisa-package-version nil nil nil 1)
+        (replace-match lisa-package-version nil nil nil 2)
       ;; (warn "Couldn't find version 'defconst'.")
       )
     (if (search-forward-regexp
-         (concat "(defconst *" lisa-package-prefix lisa-separator "version-int *\\([0-9]+\\)")
+         (concat "(defconst *\\(" lisa-package-prefix lisa-separator
+                 "\\|" lisa-package-name "-\\)"
+                 "version-int *\\([0-9]+\\)")
          nil t)
-        (replace-match (int-to-string (1+ (string-to-number (match-string 1))))
-                       nil nil nil 1)))
+        (replace-match (int-to-string (1+ (string-to-number (match-string 2))))
+                       nil nil nil 2)))
   (lisa--success))
 
 (defun lisa--report-changed (cell)
