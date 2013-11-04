@@ -254,7 +254,8 @@ M-x `lisa-insert-full-change-log' to have it all inserted for
 you. (Or you could bind it to a key in your VC mode.)"
   (interactive "P")
   (let ((wasChanged (buffer-modified-p))
-        neededDot)
+        neededDot
+        logstart)
     (when prefix (lisa-insert-full-change-log))
     (if (called-interactively-p 'interactive)
         (setq log (read-string (lisa--format "Of course. What did you change, §? "))))
@@ -271,16 +272,21 @@ Could you insert the string \";;; Change Log:\n\" somewhere?")))
          (insert ";;; Change Log:\n"))
        (insert "\n")
        (forward-char -1)
-       (insert ";; " lisa-package-version " - "
-               (format-time-string "%Y%m%d") 
-               " - ")
+       (insert ";; " lisa-package-version " - " (format-time-string "%Y%m%d") " - ")
        (save-excursion
          (insert log)
-         (unless (looking-back "\.")
+         (unless (looking-back "\\.")
            (setq neededDot t)
            (insert ".")))
        (setq lisa-package-change-log
-             (concat lisa-package-change-log "\n" log (if neededDot "." "")))
+             (concat lisa-package-change-log "\n" log (if neededDot "." "")))       
+       ;; Move to the end of the change-log and align everything.
+       (save-excursion
+         (forward-line 0)
+         (let ((logstart (point)))
+           (while (looking-at "^;;\\s-+[[:alnum:]\\.]+\\s-+-")
+             (forward-line 1))
+           (align-regexp logstart (point) "\\(\\s-*\\)-" 1 1 nil)))
        (unless wasChanged (save-buffer))
        (point))))
   (lisa--success))
