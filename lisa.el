@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.3 - 20131105 - lisa-insert-change-log now uses current "thing".
 ;; 0.5.3 - 20131105 - lisa-convert-markdown-to-comments.
 ;; 0.5.3 - 20131105 - lisa-should-align-change-log.
 ;; 0.5.2 - 20131002 - Fix insert-full-change-log
@@ -262,11 +263,16 @@ M-x `lisa-insert-full-change-log' to have it all inserted for
 you. (Or you could bind it to a key in your VC mode.)"
   (interactive "P")
   (let ((wasChanged (buffer-modified-p))
-        neededDot
-        logstart)
+        neededDot logstart current-thing)
     (when prefix (lisa-insert-full-change-log))
+    ;; Fetch the name of the current function/variable, as it'll
+    ;; usually be used in the change-log
+    (setq current-thing (save-excursion
+                          (beginning-of-defun)
+                          (forward-word 2)
+                          (thing-at-point 'symbol)))
     (if (called-interactively-p 'interactive)
-        (setq log (read-string (lisa--format "Of course. What did you change, §? "))))
+        (setq log (read-string (lisa--format "Of course. What did you change, §? ") current-thing)))
     (push-mark)
     (goto-char 
      (save-excursion
