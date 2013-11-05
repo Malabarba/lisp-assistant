@@ -86,18 +86,20 @@
 ;; 
 
 ;;; Change Log:
-;; 0.5.3 - 20131105 - lisa-insert-change-log now uses current "thing".
-;; 0.5.3 - 20131105 - lisa-convert-markdown-to-comments.
-;; 0.5.3 - 20131105 - lisa-should-align-change-log.
-;; 0.5.2 - 20131002 - Fix insert-full-change-log
-;; 0.5.1 - 20130917 - Improve insert-full-changelog
-;; 0.5   - 20130822 - Improved it a little more.
-;; 0.5   - 20130822 - Improved change logs a little bit
-;; 0.1   - 20130815 - Perfected keymap.
-;; 0.1   - 20130815 - Greatly improved doc.
-;; 0.1   - 20130815 - Started creating the minor mode.
-;; 0.1   - 20130814 - Imported code.
-;; 0.1   - 20130813 - Created File.
+;; 0.5.3 - 2013/11/05 - lisa-insert-change-log uses case-fold-search nil.
+;; 0.5.3 - 2013/11/05 - lisa-change-log-time-format.
+;; 0.5.3 - 2013/11/05 - lisa-insert-change-log now uses current "thing".
+;; 0.5.3 - 2013/11/05 - lisa-convert-markdown-to-comments.
+;; 0.5.3 - 2013/11/05 - lisa-should-align-change-log.
+;; 0.5.2 - 2013/10/02 - Fix insert-full-change-log
+;; 0.5.1 - 2013/09/17 - Improve insert-full-changelog
+;; 0.5   - 2013/08/22 - Improved it a little more.
+;; 0.5   - 2013/08/22 - Improved change logs a little bit
+;; 0.1   - 2013/08/15 - Perfected keymap.
+;; 0.1   - 2013/08/15 - Greatly improved doc.
+;; 0.1   - 2013/08/15 - Started creating the minor mode.
+;; 0.1   - 2013/08/14 - Imported code.
+;; 0.1   - 2013/08/13 - Created File.
 ;;; Code:
 
 (require 'yasnippet)
@@ -250,6 +252,14 @@ https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
   :group 'lisa
   :package-version '(lisa . "0.5.3"))
 
+(defcustom lisa-change-log-time-format "%Y/%m/%d"
+  "Format use for date string when inserting a new change-log.
+
+Get's passed straight to `format-time-string'."
+  :type 'string
+  :group 'lisa
+  :package-version '(lisa . "0.5.3"))
+
 (defun lisa-insert-change-log (prefix &optional log)
   "Insert a change-log line at the header. Lisa will insert date and version number for you (and the final \".\", if you're lazy).
 
@@ -277,16 +287,17 @@ you. (Or you could bind it to a key in your VC mode.)"
     (goto-char 
      (save-excursion
        (goto-char (point-min))
-       (unless (search-forward-regexp "^;;+ +Change Log: *\n" nil t)
-         (goto-char (point-min))
-         (unless (search-forward-regexp "^;;;+ +Code:" nil t)
-           (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
-Could you insert the string \";;; Change Log:\n\" somewhere?")))
-         (forward-line -1)
-         (insert ";;; Change Log:\n"))
+       (let ((case-fold-search t))
+         (unless (search-forward-regexp "^;;+ +change[- ]*log: *\n" nil t)
+           (goto-char (point-min))
+           (unless (search-forward-regexp "^;;;+ +Code:" nil t)
+             (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
+Could you insert the string \";;; Change Log:\n\" before start of code?")))
+           (forward-line -1)
+           (insert ";;; Change Log:\n")))
        (insert "\n")
        (forward-char -1)
-       (insert ";; " lisa-package-version " - " (format-time-string "%Y%m%d") " - ")
+       (insert ";; " lisa-package-version " - " (format-time-string lisa-change-log-time-format) " - ")
        (save-excursion
          (insert log)
          (unless (looking-back "\\.")
