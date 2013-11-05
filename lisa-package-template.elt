@@ -17,9 +17,12 @@
 ;;
 ;; INSTALLATION
 ;;
-;; If you install from melpa: nothing necessary, should work out of the box.
+;; This package is available fom Melpa, you may install it by calling
+;; M-x package-install.
 ;;
-;; If you install manually:
+;; Alternatively, you can download it manually, place it in your
+;; `load-path' and require it with
+;;
 ;;     (require '___package_name___)
 
 ;;; License:
@@ -41,13 +44,15 @@
 ;; ___version___ - ___date___ - Created File.
 ;;; Code:
 
-(defconst ___prefix______sep___version "___version___" "Version of the ___package_name___.el package.")
-(defconst ___prefix______sep___version-int 1 "Version of the ___package_name___.el package, as an integer.")
+(defconst ___package_name___-version "___version___" "Version of the ___package_name___.el package.")
+;; Not really necessary, but useful if you like counting how many versions you've released so far. 
+(defconst ___package_name___-version-int 1 "Version of the ___package_name___.el package, as an integer.")
 (defun ___prefix______sep___bug-report ()
-  "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and ___prefix___ versions."
+  "Opens github issues page in a web browser. Please send any bugs you find.
+Please include your emacs and ___package_name___ versions."
   (interactive)
   (message "Your ___prefix______sep___version is: %s, and your emacs version is: %s.\nPlease include this in your report!"
-           ___prefix______sep___version emacs-version)
+           ___package_name___-version emacs-version)
   (browse-url "https://github.com/___github_user_name___/___package_name___/issues/new"))
 (defun ___prefix______sep___customize ()
   "Open the customization menu in the `___package_name___' group."
