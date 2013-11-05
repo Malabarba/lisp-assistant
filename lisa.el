@@ -289,7 +289,7 @@ you. (Or you could bind it to a key in your VC mode.)"
      (save-excursion
        (goto-char (point-min))
        (let ((case-fold-search t))
-         (unless (search-forward-regexp "^;;+ +change[- ]*log: *\n" nil t)
+         (unless (search-forward-regexp "^;;+ +change[- ]*log: *$" nil t)
            (goto-char (point-min))
            (unless (search-forward-regexp "^;;;+ +Code:" nil t)
              (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
@@ -297,7 +297,6 @@ Could you insert the string \";;; Change Log:\n\" before start of code?")))
            (forward-line -1)
            (insert ";;; Change Log:\n")))
        (insert "\n")
-       (forward-char -1)
        (insert ";; " lisa-package-version " - " (format-time-string lisa-change-log-time-format) " - ")
        (save-excursion
          (insert log)
