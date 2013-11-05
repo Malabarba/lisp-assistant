@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.5.2
+;; Version: 0.5.3
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,20 +86,21 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.3 - 20131105 - lisa-should-align-change-log.
 ;; 0.5.2 - 20131002 - Fix insert-full-change-log
 ;; 0.5.1 - 20130917 - Improve insert-full-changelog
-;; 0.5 - 20130822 - Improved it a little more.
-;; 0.5 - 20130822 - Improved change logs a little bit
-;; 0.1 - 20130815 - Perfected keymap.
-;; 0.1 - 20130815 - Greatly improved doc.
-;; 0.1 - 20130815 - Started creating the minor mode.
-;; 0.1 - 20130814 - Imported code.
-;; 0.1 - 20130813 - Created File.
+;; 0.5   - 20130822 - Improved it a little more.
+;; 0.5   - 20130822 - Improved change logs a little bit
+;; 0.1   - 20130815 - Perfected keymap.
+;; 0.1   - 20130815 - Greatly improved doc.
+;; 0.1   - 20130815 - Started creating the minor mode.
+;; 0.1   - 20130814 - Imported code.
+;; 0.1   - 20130813 - Created File.
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.5.2" "Version of the lisa.el package.")
-(defconst lisa-version-int 4 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.5.3" "Version of the lisa.el package.")
+(defconst lisa-version-int 5 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -241,6 +242,12 @@ https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
 
 ;;; ---------------------------------------------------------------------
 ;;; Package handling functions
+(defcustom lisa-should-align-change-log t
+  "Should lisa align your change-log to the \"-\" after inserting an entry?"
+  :type 'boolean
+  :group 'lisa
+  :package-version '(lisa . "0.5.3"))
+
 (defun lisa-insert-change-log (prefix &optional log)
   "Insert a change-log line at the header. Lisa will insert date and version number for you (and the final \".\", if you're lazy).
 
@@ -281,12 +288,13 @@ Could you insert the string \";;; Change Log:\n\" somewhere?")))
        (setq lisa-package-change-log
              (concat lisa-package-change-log "\n" log (if neededDot "." "")))       
        ;; Move to the end of the change-log and align everything.
-       (save-excursion
-         (forward-line 0)
-         (let ((logstart (point)))
-           (while (looking-at "^;;\\s-+[[:alnum:]\\.]+\\s-+-")
-             (forward-line 1))
-           (align-regexp logstart (point) "\\(\\s-*\\)-" 1 1 nil)))
+       (when lisa-should-align-change-log
+         (save-excursion
+          (forward-line 0)
+          (let ((logstart (point)))
+            (while (looking-at "^;;\\s-+[[:alnum:]\\.]+\\s-+-")
+              (forward-line 1))
+            (align-regexp logstart (point) "\\(\\s-*\\)-" 1 1 nil))))
        (unless wasChanged (save-buffer))
        (point))))
   (lisa--success))
