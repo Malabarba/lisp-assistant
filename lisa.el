@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.3 - 2013/11/05 - lisa-customize.
 ;; 0.5.3 - 2013/11/05 - lisa-insert-change-log uses case-fold-search nil.
 ;; 0.5.3 - 2013/11/05 - lisa-change-log-time-format.
 ;; 0.5.3 - 2013/11/05 - lisa-insert-change-log now uses current "thing".
@@ -111,10 +112,10 @@
   (browse-url "https://github.com/Bruce-Connor/lisp-assistant/issues/new")
   (message "Your lisa-version is: %s, and your emacs version is: %s.\nPlease include this in your report!"
            lisa-version emacs-version))
-;; (defun lisa-customize ()
-;;   "Open the customization menu in the `lisa' group."
-;;   (interactive)
-;;   (customize-group 'lisa t))
+(defun lisa-customize ()
+  "Open the customization menu in the `lisa' group."
+  (interactive)
+  (customize-group 'lisa t))
 
 ;;; ---------------------------------------------------------------------
 ;;; Package handling variables
@@ -636,7 +637,7 @@ Feel free to edit that template to your liking. If the file
 doesn't exist, she will kindly offer to download it for you."
   (interactive)
   (let ((yr (format-time-string "%Y"))
-        (dt (format-time-string "%Y%m%d")))
+        (dt (format-time-string lisa-change-log-time-format)))
     ;; Try to guess the variables
     (lisa-define-package-variables)
     ;; Insert and fill in the template
