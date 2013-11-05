@@ -297,11 +297,11 @@ Could you insert the string \";;; Change Log:\n\" somewhere?")))
        ;; Move to the end of the change-log and align everything.
        (when lisa-should-align-change-log
          (save-excursion
-          (forward-line 0)
-          (let ((logstart (point)))
-            (while (looking-at "^;;\\s-+[[:alnum:]\\.]+\\s-+-")
-              (forward-line 1))
-            (align-regexp logstart (point) "\\(\\s-*\\)-" 1 1 nil))))
+           (forward-line 0)
+           (let ((logstart (point)))
+             (while (looking-at "^;;\\s-+[[:alnum:]\\.]+\\s-+-")
+               (forward-line 1))
+             (align-regexp logstart (point) "\\(\\s-*\\)-" 1 1 nil))))
        (unless wasChanged (save-buffer))
        (point))))
   (lisa--success))
@@ -655,27 +655,6 @@ doesn't exist, she will kindly offer to download it for you."
       (insert (or (read-string "Would you like to write a short description? ") "")) 
       (search-forward "; Keywords: ")
       (message "%s" (lisa--format "Thank you, §. Call me if you need anything.")))))
-
-(defun lisa-convert-markdown-to-comments ()
-  "Convert the current region (or whole buffer) of markdown into suitable lisp comments.
-
-This is used to convert the README.md file into lisp comments
-adequate for pasting into the package's source file."
-  (interactive)
-  (let ((l (if (region-active-p) (region-beginning) (point-max)))
-        (r (if (region-active-p) (region-end) (point-min)))
-        text)
-    (setq text (buffer-substring-no-properties l r))
-    (with-temp-buffer
-      (insert text)
-      (replace-regexp-everywhere "^" ";; ")
-      ;; (replace-regexp-everywhere "^;;$" "")
-      (goto-char (point-min))
-      (while (search-forward "`" nil :noerror)
-        (search-forward "`" nil :noerror)
-        (replace-match "'" :fixedcase :literal))
-      (kill-ring-save (point-min) (point-max))
-      (message "Saved result to kill-ring."))))
 
 ;;;###autoload
 (define-minor-mode lisa-mode
