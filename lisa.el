@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.3 - 20131105 - lisa-convert-markdown-to-comments.
 ;; 0.5.3 - 20131105 - lisa-should-align-change-log.
 ;; 0.5.2 - 20131002 - Fix insert-full-change-log
 ;; 0.5.1 - 20130917 - Improve insert-full-changelog
@@ -648,6 +649,27 @@ doesn't exist, she will kindly offer to download it for you."
       (insert (or (read-string "Would you like to write a short description? ") "")) 
       (search-forward "; Keywords: ")
       (message "%s" (lisa--format "Thank you, §. Call me if you need anything.")))))
+
+(defun lisa-convert-markdown-to-comments ()
+  "Convert the current region (or whole buffer) of markdown into suitable lisp comments.
+
+This is used to convert the README.md file into lisp comments
+adequate for pasting into the package's source file."
+  (interactive)
+  (let ((l (if (region-active-p) (region-beginning) (point-max)))
+        (r (if (region-active-p) (region-end) (point-min)))
+        text)
+    (setq text (buffer-substring-no-properties l r))
+    (with-temp-buffer
+      (insert text)
+      (replace-regexp-everywhere "^" ";; ")
+      ;; (replace-regexp-everywhere "^;;$" "")
+      (goto-char (point-min))
+      (while (search-forward "`" nil :noerror)
+        (search-forward "`" nil :noerror)
+        (replace-match "'" :fixedcase :literal))
+      (kill-ring-save (point-min) (point-max))
+      (message "Saved result to kill-ring."))))
 
 ;;;###autoload
 (define-minor-mode lisa-mode
