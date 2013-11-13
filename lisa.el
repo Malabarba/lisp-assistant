@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.3 - 20131113 - lisa-define-package-variables doc.
 ;; 0.5.3 - 20131112 - lisa-insert-change-log now uses lisa--current-thing-before-update.
 ;; 0.5.3 - 20131105 - lisa-insert-change-log now uses current "thing".
 ;; 0.5.3 - 20131105 - lisa-convert-markdown-to-comments.
@@ -407,13 +408,15 @@ can be used in yasnippets or in your own customization code, and
 Lisa can update them for you (when the version number changes).
 
 The package name and version are used in the \"defcustom\"
-snippet, invokable by typing \"(dc\" then \\[yas-expand].
+  snippet, invokable by typing \"(dc\" then \\[yas-next-field-or-maybe-expand].
 The prefix and separator are also used with the \"defun\"
-snippet, invokable by typing \"(df\" then \\[yas-expand].
+  snippet, invokable by typing \"(df\" then \\[yas-next-field-or-maybe-expand].
 
 The first three can also be quickly inserted with yasnippets.
-Just type \"pp\", \"pv\", or \"pn\", and hit \\[yas-expand] (depends
-on yas-minor-mode being active)."
+Just type \"pp\", \"pv\", or \"pn\", and hit \\[yas-next-field-or-maybe-expand]
+ 
+NOTE: depends on yas-minor-mode being active (which Lisa turns on
+for you)."
   (interactive)
   (let ((vo lisa-package-version)
         (no lisa-package-name)
