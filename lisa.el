@@ -86,20 +86,21 @@
 ;; 
 
 ;;; Change Log:
-;; 0.5.3 - 20131113 - lisa-define-package-variables doc.
-;; 0.5.3 - 20131112 - lisa-insert-change-log now uses lisa--current-thing-before-update.
-;; 0.5.3 - 20131105 - lisa-insert-change-log now uses current "thing".
-;; 0.5.3 - 20131105 - lisa-convert-markdown-to-comments.
-;; 0.5.3 - 20131105 - lisa-should-align-change-log.
-;; 0.5.2 - 20131002 - Fix insert-full-change-log
-;; 0.5.1 - 20130917 - Improve insert-full-changelog
-;; 0.5   - 20130822 - Improved it a little more.
-;; 0.5   - 20130822 - Improved change logs a little bit
-;; 0.1   - 20130815 - Perfected keymap.
-;; 0.1   - 20130815 - Greatly improved doc.
-;; 0.1   - 20130815 - Started creating the minor mode.
-;; 0.1   - 20130814 - Imported code.
-;; 0.1   - 20130813 - Created File.
+;; 0.5.3 - 2013/11/13 - lisa-insert-change-log uses lisa-change-log-date-format.
+;; 0.5.3 - 2013/11/13 - lisa-define-package-variables doc.
+;; 0.5.3 - 2013/11/12 - lisa-insert-change-log now uses lisa--current-thing-before-update.
+;; 0.5.3 - 2013/11/05 - lisa-insert-change-log now uses current "thing".
+;; 0.5.3 - 2013/11/05 - lisa-convert-markdown-to-comments.
+;; 0.5.3 - 2013/11/05 - lisa-should-align-change-log.
+;; 0.5.2 - 2013/10/02 - Fix insert-full-change-log
+;; 0.5.1 - 2013/09/17 - Improve insert-full-changelog
+;; 0.5   - 2013/08/22 - Improved it a little more.
+;; 0.5   - 2013/08/22 - Improved change logs a little bit
+;; 0.1   - 2013/08/15 - Perfected keymap.
+;; 0.1   - 2013/08/15 - Greatly improved doc.
+;; 0.1   - 2013/08/15 - Started creating the minor mode.
+;; 0.1   - 2013/08/14 - Imported code.
+;; 0.1   - 2013/08/13 - Created File.
 ;;; Code:
 
 (require 'yasnippet)
@@ -252,6 +253,14 @@ https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
   :group 'lisa
   :package-version '(lisa . "0.5.3"))
 
+(defcustom lisa-change-log-date-format "%Y/%m/%d - "
+  "Format use for inserting the date in a change log.
+
+See `format-time-string'."
+  :type 'string
+  :group 'lisa
+  :package-version '(lisa . "0.5.3"))
+
 (defun lisa-insert-change-log (prefix &optional log)
   "Insert a change-log line at the header. Lisa will insert date and version number for you (and the final \".\", if you're lazy).
 
@@ -298,7 +307,8 @@ Could you insert the string \";;; Change Log:\n\" somewhere?")))
          (insert ";;; Change Log:\n"))
        (insert "\n")
        (forward-char -1)
-       (insert ";; " lisa-package-version " - " (format-time-string "%Y%m%d") " - ")
+       (insert ";; " lisa-package-version " - "
+               (when lisa-change-log-date-format (format-time-string lisa-change-log-date-format)))
        (save-excursion
          (insert log)
          (unless (looking-back "\\.")
