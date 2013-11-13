@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.3 - 20131112 - lisa-insert-change-log now uses lisa--current-thing-before-update.
 ;; 0.5.3 - 20131105 - lisa-insert-change-log now uses current "thing".
 ;; 0.5.3 - 20131105 - lisa-convert-markdown-to-comments.
 ;; 0.5.3 - 20131105 - lisa-should-align-change-log.
@@ -271,6 +272,16 @@ you. (Or you could bind it to a key in your VC mode.)"
                           (beginning-of-defun)
                           (forward-word 2)
                           (thing-at-point 'symbol)))
+    (when (and lisa--current-thing-before-update
+               (or (equal last-command 'lisa-update-version-number)
+                   (string-match (concat "^$\\|^"
+                                         lisa-package-name ".el$\\|^"
+                                         "\\(" lisa-package-prefix lisa-separator
+                                         "\\|" lisa-package-name "-\\)"
+                                         "version")
+                                 current-thing)))
+      (setq current-thing lisa--current-thing-before-update))
+    (setq lisa--current-thing-before-update nil)
     (if (called-interactively-p 'interactive)
         (setq log (read-string (lisa--format "Of course. What did you change, §? ") current-thing)))
     (push-mark)
@@ -331,12 +342,24 @@ first call since last time `lisa-insert-change-log' was called."
   (when (looking-at "$") (delete-char 1))
   (lisa--success))
 
+(defvar lisa--current-thing-before-update nil
+  "Store the defun/defvar we were inside before calling `lisa-update-version-number'.
+
+So that, if the user calls `lisa-insert-change-log' immediately
+after that, we can use that information.")
+(make-variable-buffer-local 'lisa--current-thing-before-update)
+
 (defun lisa-update-version-number ()
   "Ask Lisa to change the version number of current package.
 
 Edits the comment at the header, and updates any defconst's
 containing the version number."
   (interactive)
+  (setq lisa--current-thing-before-update
+        (save-excursion
+          (beginning-of-defun)
+          (forward-word 2)
+          (thing-at-point 'symbol)))
   (let ((vo lisa-package-version))
     (setq lisa-package-version (read-string (lisa--format "What's the new number, §? ") vo))
     (goto-char (point-min))
