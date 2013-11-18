@@ -1,7 +1,5 @@
-Meet Lisa, your Lisp Assistant. [![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=artur%2emalabarba%40gmail%2ecom&lc=BR&item_name=smart%2dmode%2dline%20Donation&item_number=smart%2dmode%2dline&button_subtype=services&currency_code=USD&bn=PP%2dBuyNowBF%3abtn_buynowCC_LG%2egif%3aNonHosted)
+Meet Lisa, your Lisp Assistant. [![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=GLZLRLW72Q8G2)
 ====
-
-
 
 `lisa-mode` is a minor-mode which defines a series of features to
 aid in lisp development. It defines:
