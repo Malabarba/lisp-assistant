@@ -1,4 +1,4 @@
-Meet Lisa, your Lisp Assistant. [test](https://google-developers.appspot.com/checkout/developer/support_button_generator_23ad2c2cd344aaf70c04e7d34e2167b7.frame#buttonUrl)
+Meet Lisa, your Lisp Assistant. [test](https://checkout.google.com/buttons/support.gif?merchant_id=081240517764473&w=130&h=50&style=trans&variant=text)
 ====
 
 `lisa-mode` is a minor-mode which defines a series of features to
