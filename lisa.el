@@ -86,6 +86,9 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.3 - 2013/11/13 - lisa-insert-change-log uses lisa-change-log-date-format.
+;; 0.5.3 - 2013/11/13 - lisa-define-package-variables doc.
+;; 0.5.3 - 2013/11/12 - lisa-insert-change-log now uses lisa--current-thing-before-update.
 ;; 0.5.3 - 2013/11/05 - lisa-customize.
 ;; 0.5.3 - 2013/11/05 - lisa-insert-change-log uses case-fold-search nil.
 ;; 0.5.3 - 2013/11/05 - lisa-change-log-time-format.
@@ -253,10 +256,10 @@ https://raw.github.com/Bruce-Connor/lisp-assistant/master/template.elt")
   :group 'lisa
   :package-version '(lisa . "0.5.3"))
 
-(defcustom lisa-change-log-time-format "%Y/%m/%d"
-  "Format use for date string when inserting a new change-log.
+(defcustom lisa-change-log-date-format "%Y/%m/%d - "
+  "Format use for inserting the date in a change log.
 
-Get's passed straight to `format-time-string'."
+See `format-time-string'."
   :type 'string
   :group 'lisa
   :package-version '(lisa . "0.5.3"))
@@ -282,6 +285,16 @@ you. (Or you could bind it to a key in your VC mode.)"
                           (beginning-of-defun)
                           (forward-word 2)
                           (thing-at-point 'symbol)))
+    (when (and lisa--current-thing-before-update
+               (or (equal last-command 'lisa-update-version-number)
+                   (string-match (concat "^$\\|^"
+                                         lisa-package-name ".el$\\|^"
+                                         "\\(" lisa-package-prefix lisa-separator
+                                         "\\|" lisa-package-name "-\\)"
+                                         "version")
+                                 current-thing)))
+      (setq current-thing lisa--current-thing-before-update))
+    (setq lisa--current-thing-before-update nil)
     (if (called-interactively-p 'interactive)
         (setq log (read-string (lisa--format "Of course. What did you change, §? ") current-thing)))
     (push-mark)
@@ -295,9 +308,10 @@ you. (Or you could bind it to a key in your VC mode.)"
              (error (lisa--format "I'm very sorry, §. I couldn't find the change-log nor the start of code.
 Could you insert the string \";;; Change Log:\n\" before start of code?")))
            (forward-line -1)
-           (insert ";;; Change Log:\n")))
+           (insert ";;; Change Log:")))
        (insert "\n")
-       (insert ";; " lisa-package-version " - " (format-time-string lisa-change-log-time-format) " - ")
+       (insert ";; " lisa-package-version " - "
+               (when lisa-change-log-date-format (format-time-string lisa-change-log-date-format)))
        (save-excursion
          (insert log)
          (unless (looking-back "\\.")
@@ -342,12 +356,24 @@ first call since last time `lisa-insert-change-log' was called."
   (when (looking-at "$") (delete-char 1))
   (lisa--success))
 
+(defvar lisa--current-thing-before-update nil
+  "Store the defun/defvar we were inside before calling `lisa-update-version-number'.
+
+So that, if the user calls `lisa-insert-change-log' immediately
+after that, we can use that information.")
+(make-variable-buffer-local 'lisa--current-thing-before-update)
+
 (defun lisa-update-version-number ()
   "Ask Lisa to change the version number of current package.
 
 Edits the comment at the header, and updates any defconst's
 containing the version number."
   (interactive)
+  (setq lisa--current-thing-before-update
+        (save-excursion
+          (beginning-of-defun)
+          (forward-word 2)
+          (thing-at-point 'symbol)))
   (let ((vo lisa-package-version))
     (setq lisa-package-version (read-string (lisa--format "What's the new number, §? ") vo))
     (goto-char (point-min))
@@ -395,13 +421,15 @@ can be used in yasnippets or in your own customization code, and
 Lisa can update them for you (when the version number changes).
 
 The package name and version are used in the \"defcustom\"
-snippet, invokable by typing \"(dc\" then \\[yas-expand].
+  snippet, invokable by typing \"(dc\" then \\[yas-next-field-or-maybe-expand].
 The prefix and separator are also used with the \"defun\"
-snippet, invokable by typing \"(df\" then \\[yas-expand].
+  snippet, invokable by typing \"(df\" then \\[yas-next-field-or-maybe-expand].
 
 The first three can also be quickly inserted with yasnippets.
-Just type \"pp\", \"pv\", or \"pn\", and hit \\[yas-expand] (depends
-on yas-minor-mode being active)."
+Just type \"pp\", \"pv\", or \"pn\", and hit \\[yas-next-field-or-maybe-expand]
+ 
+NOTE: depends on yas-minor-mode being active (which Lisa turns on
+for you)."
   (interactive)
   (let ((vo lisa-package-version)
         (no lisa-package-name)
