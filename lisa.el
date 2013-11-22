@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.5.3
+;; Version: 0.5.4
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.5.4 - 2013/11/22 - Fix "time" in lisa-insert-template.
 ;; 0.5.3 - 2013/11/13 - lisa-insert-change-log uses lisa-change-log-date-format.
 ;; 0.5.3 - 2013/11/13 - lisa-define-package-variables doc.
 ;; 0.5.3 - 2013/11/12 - lisa-insert-change-log now uses lisa--current-thing-before-update.
@@ -107,8 +108,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.5.3" "Version of the lisa.el package.")
-(defconst lisa-version-int 5 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.5.4" "Version of the lisa.el package.")
+(defconst lisa-version-int 6 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -664,7 +665,7 @@ Feel free to edit that template to your liking. If the file
 doesn't exist, she will kindly offer to download it for you."
   (interactive)
   (let ((yr (format-time-string "%Y"))
-        (dt (format-time-string lisa-change-log-time-format)))
+        (dt (format-time-string lisa-change-log-date-format)))
     ;; Try to guess the variables
     (lisa-define-package-variables)
     ;; Insert and fill in the template
