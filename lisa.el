@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.5.4
+;; Version: 0.6
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.6   - 2013/11/30 - lisa-add-autoload.
 ;; 0.5.4 - 2013/11/22 - Fix "time" in lisa-insert-template.
 ;; 0.5.3 - 2013/11/13 - lisa-insert-change-log uses lisa-change-log-date-format.
 ;; 0.5.3 - 2013/11/13 - lisa-define-package-variables doc.
@@ -108,8 +109,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.5.4" "Version of the lisa.el package.")
-(defconst lisa-version-int 6 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.6" "Version of the lisa.el package.")
+(defconst lisa-version-int 7 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -556,6 +557,19 @@ If anywhere inside a comment, uncomment it."
         (backward-up-list))
     (error (forward-sexp -1))))
 
+(defun lisa-add-autoload ()
+  "Add \";;;###autoload\\n\" to the start of current defun."
+  (interactive)
+  (let ((dest
+         (save-excursion
+           (end-of-defun)
+           (beginning-of-defun)
+           (point))))
+    (if (< (point) dest)
+        (insert ";;;###autoload\n")
+      (save-excursion
+        (goto-char dest)
+        (insert ";;;###autoload\n")))))
 
 ;;; ---------------------------------------------------------------------
 ;;; Lisa Keymap
@@ -569,6 +583,7 @@ If anywhere inside a comment, uncomment it."
 (define-key lisa-eval-map "r" 'eval-region)
 (define-key lisa-lisa-map "n" 'lisa-define-package-variables)
 (define-key lisa-lisa-map "#" 'lisa-define-package-variables)
+(define-key lisa-lisa-map "a" 'lisa-add-autoload)
 (define-key lisa-lisa-map "l" 'lisa-insert-change-log)
 (define-key lisa-lisa-map "t" 'lisa-insert-template)
 (define-key lisa-lisa-map "u" 'lisa-update-version-number)
@@ -771,6 +786,7 @@ snippet         expansion
         (when (or (eq lisa-helpful-keymap 'lisa)
                   (eq lisa-helpful-keymap t))
           (define-key lisa-mode-map "#" 'lisa-define-package-variables)
+          (define-key lisa-mode-map "a" 'lisa-add-autoload)
           (define-key lisa-mode-map "l" 'lisa-insert-change-log)
           (define-key lisa-mode-map "u" 'lisa-update-version-number)
           ;; (define-key lisa-mode-map "c" 'lisa-comment-sexp)
