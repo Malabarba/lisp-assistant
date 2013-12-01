@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.6   - 2013/12/01 - lisa-update-version-number pushes mark.
 ;; 0.6   - 2013/11/30 - lisa-add-autoload.
 ;; 0.5.4 - 2013/11/22 - Fix "time" in lisa-insert-template.
 ;; 0.5.3 - 2013/11/13 - lisa-insert-change-log uses lisa-change-log-date-format.
@@ -371,6 +372,7 @@ after that, we can use that information.")
 Edits the comment at the header, and updates any defconst's
 containing the version number."
   (interactive)
+  (push-mark)
   (setq lisa--current-thing-before-update
         (save-excursion
           (beginning-of-defun)
