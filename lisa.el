@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.6   - 2013/12/02 - Improve lisa-find-or-define-variable/function.
 ;; 0.6   - 2013/12/01 - lisa-update-version-number pushes mark.
 ;; 0.6   - 2013/11/30 - lisa-add-autoload.
 ;; 0.5.4 - 2013/11/22 - Fix "time" in lisa-insert-template.
@@ -478,7 +479,7 @@ This is ignored (treated as nil) if paredit mode is active."
   :package-version '(lisa . "0.1"))
 
 (defun lisa--find-in-buffer (r s)
-  "Find the string X somewhere in this buffer."
+  "Find the string (concat R (regexp-quote S)) somewhere in this buffer."
   (let ((l (save-excursion
              (goto-char (point-min))
              (save-match-data
@@ -486,54 +487,74 @@ This is ignored (treated as nil) if paredit mode is active."
                                             nil :noerror)
                  (match-beginning 0))))))
     (when l
+      (push-mark)
       (goto-char l)
       l)))
 
 (defun lisa-find-or-define-function ()
   "Look at the symbol under point. If it's a defined function, go to it. If it isn't, go back to top level code and create a function with this name.
 
-This meant to aid your workflow. If you write in your code the
-name of a function you haven't defined yet, you can then just
-place point on its name and hit \\[lisa-find-or-define-function] and a yasnippet
-defun will be inserted with point inside.
+`find-function' on steroids. It is a great to aid your workflow.
+
+If you write in your code the name of a function you haven't
+defined yet, you can then just place point on its name and hit
+\\[lisa-find-or-define-function] and a yasnippet defun will be
+inserted with point inside. After that, you can just hit C-u
+C-SPC (`pop-mark') to go back to where you were.
 
 If the function under point is already defined this just calls
-`find-function'."
+`find-function', with one exception:
+    if there's a defun for this function in the current buffer,
+    we go to that even if it's not where the global definition
+    comes from (this is useful if you're writing an emacs package
+    that also happens to be installed through package.el)."
   (interactive)
-  (if (function-called-at-point)
-      (find-function (function-called-at-point))
-    (push-mark)
-    (let ((name (thing-at-point 'symbol)))
-      (unless (lisa--find-in-buffer "(defun " name)
-        (end-of-defun)
-        (insert "\n(df)\n")
-        (backward-char 2)
-        (yas-expand)
-        (insert name)))))
+  (let ((name (or (and (function-called-at-point)
+                       (symbol-name (function-called-at-point)))
+                  (thing-at-point 'symbol))))
+    (unless (and name (lisa--find-in-buffer "(defun " name))
+     (if (function-called-at-point)
+         (find-function (function-called-at-point))
+       (push-mark)
+       (end-of-defun)
+       (insert "\n(df)\n")
+       (backward-char 2)
+       (yas-expand)
+       (insert name)))))
 
 (defun lisa-find-or-define-variable (&optional prefix)
   "Look at the symbol under point. If it's a defined variable, go to it. If it isn't, go back to top level code and create a variable with this name.
 
-This meant to aid your workflow. If you write in your code the
-name of a variable you haven't defined yet, you can then just
-place point on its name and hit \\[lisa-find-or-define-variable] and a yasnippet
-defun will be inserted with point inside.
+`find-function' on steroids. It is a great to aid your workflow.
+
+If you write in your code the name of a variable you haven't
+defined yet, you can then just place point on its name and hit
+\\[lisa-find-or-define-variable] and a yasnippet defun will be
+inserted with point inside. After that, you can just hit C-u
+C-SPC (`pop-mark') to go back to where you were.
 
 If the variable under point is already defined this just calls
-`find-variable'."
+`find-variable', with one exception:
+    if there's a defvar for this variable in the current buffer,
+    we go to that even if it's not where the global definition
+    comes from (this is useful if you're writing an emacs package
+    that also happens to be installed through package.el)."
   (interactive "P")
-  (if (symbolp (variable-at-point))
-      (find-variable (variable-at-point))
-    (push-mark)
-    (let ((name (thing-at-point 'symbol)))
-      (unless (lisa--find-in-buffer "(def\\(custom\\|const\\|var\\) " name)
-        (beginning-of-defun)
-        (when (looking-back "^;;;###autoload\\s-*\n")
-          (forward-line -1))
-        (insert "(" (if prefix "dv" "dc") ")\n\n")
-        (backward-char 3)
-        (yas-expand)
-        (insert name)))))
+  (let ((name (or (and (variable-at-point)
+                       (symbol-name (variable-at-point)))
+                  (thing-at-point 'symbol))))
+    (unless (lisa--find-in-buffer "(def\\(custom\\|const\\|var\\) " name)
+      (if (symbolp (variable-at-point))
+          (find-variable (variable-at-point))
+        (push-mark)
+        (let ((name (thing-at-point 'symbol)))
+          (beginning-of-defun)
+          (when (looking-back "^;;;###autoload\\s-*\n")
+            (forward-line -1))
+          (insert "(" (if prefix "dv" "dc") ")\n\n")
+          (backward-char 3)
+          (yas-expand)
+          (insert name))))))
 
 (defun lisa-comment-sexp ()
   "Move to beginning of current sexp and comment it.
