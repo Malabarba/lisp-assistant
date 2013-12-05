@@ -41,7 +41,7 @@
 ;; 
 
 ;;; Change Log:
-;; ___version___ - ___date___ - Created File.
+;; ___version___ - ___date___ Created File.
 ;;; Code:
 
 (defconst ___package_name___-version "___version___" "Version of the ___package_name___.el package.")
