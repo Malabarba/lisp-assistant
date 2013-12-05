@@ -491,7 +491,7 @@ This is ignored (treated as nil) if paredit mode is active."
       (goto-char l)
       l)))
 
-(defun lisa-find-or-define-function ()
+(defun lisa-find-or-define-function (&optional prefix)
   "Look at the symbol under point. If it's a defined function, go to it. If it isn't, go back to top level code and create a function with this name.
 
 `find-function' on steroids. It is a great to aid your workflow.
@@ -507,17 +507,19 @@ If the function under point is already defined this just calls
     if there's a defun for this function in the current buffer,
     we go to that even if it's not where the global definition
     comes from (this is useful if you're writing an emacs package
-    that also happens to be installed through package.el)."
-  (interactive)
+    that also happens to be installed through package.el).
+
+With a prefix argument, defines a `defmacro' instead of a `defun'."
+  (interactive "P")
   (let ((name (or (and (function-called-at-point)
                        (symbol-name (function-called-at-point)))
                   (thing-at-point 'symbol))))
-    (unless (and name (lisa--find-in-buffer "(defun " name))
+    (unless (and name (lisa--find-in-buffer "(def\\(un\\|macro\\|alias\\) " name))
      (if (function-called-at-point)
          (find-function (function-called-at-point))
        (push-mark)
        (end-of-defun)
-       (insert "\n(df)\n")
+       (insert "\n" (if prefix "(dm)" "(df)") "\n")
        (backward-char 2)
        (yas-expand)
        (insert name)))))
@@ -538,14 +540,16 @@ If the variable under point is already defined this just calls
     if there's a defvar for this variable in the current buffer,
     we go to that even if it's not where the global definition
     comes from (this is useful if you're writing an emacs package
-    that also happens to be installed through package.el)."
+    that also happens to be installed through package.el).
+
+With a prefix argument, defines a `defvar' instead of a `defcustom'."
   (interactive "P")
-  (let ((name (or (and (variable-at-point)
+  (let ((name (or (and (symbolp (variable-at-point))
                        (symbol-name (variable-at-point)))
                   (thing-at-point 'symbol))))
     (unless (lisa--find-in-buffer "(def\\(custom\\|const\\|var\\) " name)
-      (if (symbolp (variable-at-point))
-          (find-variable (variable-at-point))
+      (unless (and (symbolp (variable-at-point))
+                   (ignore-errors (find-variable (variable-at-point)) t))
         (push-mark)
         (let ((name (thing-at-point 'symbol)))
           (beginning-of-defun)
