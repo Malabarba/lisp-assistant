@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.6   - 2013/12/14 - Improve define-function inside add-hook and define-key.
 ;; 0.6   - 2013/12/02 - Improve lisa-find-or-define-variable/function.
 ;; 0.6   - 2013/12/01 - lisa-update-version-number pushes mark.
 ;; 0.6   - 2013/11/30 - lisa-add-autoload.
@@ -511,9 +512,7 @@ If the function under point is already defined this just calls
 
 With a prefix argument, defines a `defmacro' instead of a `defun'."
   (interactive "P")
-  (let ((name (or (and (function-called-at-point)
-                       (symbol-name (function-called-at-point)))
-                  (thing-at-point 'symbol))))
+  (let ((name (lisa--function-at-point)))
     (unless (and name (lisa--find-in-buffer "(def\\(un\\|macro\\|alias\\) " name))
      (if (function-called-at-point)
          (find-function (function-called-at-point))
@@ -523,6 +522,14 @@ With a prefix argument, defines a `defmacro' instead of a `defun'."
        (backward-char 2)
        (yas-expand)
        (insert name)))))
+
+(defun lisa--function-at-point ()
+  "Return name of `function-called-at-point', unless it's `add-hook', then return symbol at point."
+  (let ((fcap (function-called-at-point)))
+    (or (and fcap
+             (not (memq fcap '(add-hook define-key)))
+             (symbol-name fcap))
+        (thing-at-point 'symbol))))
 
 (defun lisa-find-or-define-variable (&optional prefix)
   "Look at the symbol under point. If it's a defined variable, go to it. If it isn't, go back to top level code and create a variable with this name.
