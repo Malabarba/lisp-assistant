@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.6.1 - 2014/02/12 - defun snippet doesn't collide with delete-file.
 ;; 0.6.1 - 2014/02/12 - lisa--find-in-buffer demands end of symbol.
 ;; 0.6   - 2013/12/14 - Improve define-function inside add-hook and define-key.
 ;; 0.6   - 2013/12/02 - Improve lisa-find-or-define-variable/function.
@@ -519,7 +520,7 @@ With a prefix argument, defines a `defmacro' instead of a `defun'."
          (find-function (function-called-at-point))
        (push-mark)
        (end-of-defun)
-       (insert "\n" (if prefix "(dm)" "(df)") "\n")
+       (insert "\n" (if prefix "(dm)" "(dfu)") "\n")
        (backward-char 2)
        (yas-expand)
        (insert name)))))
