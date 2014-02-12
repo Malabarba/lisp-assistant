@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.6
+;; Version: 0.6.1
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.6.1 - 2014/02/12 - lisa--find-in-buffer demands end of symbol.
 ;; 0.6   - 2013/12/14 - Improve define-function inside add-hook and define-key.
 ;; 0.6   - 2013/12/02 - Improve lisa-find-or-define-variable/function.
 ;; 0.6   - 2013/12/01 - lisa-update-version-number pushes mark.
@@ -112,8 +113,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.6" "Version of the lisa.el package.")
-(defconst lisa-version-int 7 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.6.1" "Version of the lisa.el package.")
+(defconst lisa-version-int 8 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -484,7 +485,7 @@ This is ignored (treated as nil) if paredit mode is active."
   (let ((l (save-excursion
              (goto-char (point-min))
              (save-match-data
-               (when (search-forward-regexp (concat r (regexp-quote s))
+               (when (search-forward-regexp (concat r (regexp-quote s) "\\_>")
                                             nil :noerror)
                  (match-beginning 0))))))
     (when l
