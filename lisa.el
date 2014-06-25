@@ -582,8 +582,7 @@ If anywhere inside a comment, uncomment it."
       (indent-for-comment))
     (unless (looking-at "(")
       (lisa--backward-up-sexp))
-    (mark-sexp)
-    (comment-region (region-beginning) (region-end))))
+    (comment-region (point) (save-excursion (forward-sexp 1) (point)))))
 
 (defun lisa--backward-up-sexp ()
   "Up goes the road to success."
