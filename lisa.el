@@ -4,7 +4,7 @@
 
 ;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
 ;; URL: http://github.com/Bruce-Connor/lisp-assistant
-;; Version: 0.6.1
+;; Version: 0.6.2
 ;; Package-Requires: ((yasnippet "0.8.0"))
 ;; Keywords: lisp tools
 ;; Prefix: lisa
@@ -86,6 +86,7 @@
 ;; 
 
 ;;; Change Log:
+;; 0.6.2 - 2014/07/05 - Less verbosity in lisa-define-package-variables.
 ;; 0.6.1 - 2014/02/12 - defun snippet doesn't collide with delete-file.
 ;; 0.6.1 - 2014/02/12 - lisa--find-in-buffer demands end of symbol.
 ;; 0.6   - 2013/12/14 - Improve define-function inside add-hook and define-key.
@@ -114,8 +115,8 @@
 ;;; Code:
 
 (require 'yasnippet)
-(defconst lisa-version "0.6.1" "Version of the lisa.el package.")
-(defconst lisa-version-int 8 "Version of the lisa.el package, as an integer.")
+(defconst lisa-version "0.6.2" "Version of the lisa.el package.")
+(defconst lisa-version-int 9 "Version of the lisa.el package, as an integer.")
 (defun lisa-bug-report ()
   "Opens github issues page in a web browser. Please send me any bugs you find, and please inclue your emacs and lisa versions."
   (interactive)
@@ -463,12 +464,13 @@ for you)."
       (goto-char (point-min))
       (if (search-forward-regexp "^;;+ +Separator: +\\([^ \n',`(){}]+\\)" nil t)
           (setq lisa-separator (match-string-no-properties 1))))
-    (message "%s"
-             (mapconcat 'lisa--report-changed
-                        (list (cons vo 'lisa-package-version)
-                              (cons no 'lisa-package-name)
-                              (cons po 'lisa-package-prefix)
-                              (cons so 'lisa-separator)) ""))))
+    (when (and (boundp 'after-init-time) after-init-time)
+      (message "%s"
+              (mapconcat 'lisa--report-changed
+                         (list (cons vo 'lisa-package-version)
+                               (cons no 'lisa-package-name)
+                               (cons po 'lisa-package-prefix)
+                               (cons so 'lisa-separator)) "")))))
 
 ;;; ---------------------------------------------------------------------
 ;;; General coding 
