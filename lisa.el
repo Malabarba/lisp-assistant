@@ -361,7 +361,7 @@ first call since last time `lisa-insert-change-log' was called."
   (when do-insert 
     (save-excursion
       (insert lisa--package-change-log)))
-  (when (looking-at "$") (delete-char 1))
+  ;; (when (looking-at "$") (delete-char 1))
   (lisa--success))
 
 (defvar lisa--current-thing-before-update nil
