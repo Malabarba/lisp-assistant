@@ -24,8 +24,6 @@
 ;; Most useful functions are: 
 ;;   1. `lisa-insert-change-log'
 ;;   2. `lisa-update-version-number'
-;;   3. `lisa-find-or-define-function'
-;;   4. `lisa-find-or-define-variable'
 ;; (see the `lisa-mode' function description for the others)
 ;; 
 ;; Most useful yasnippets are:
@@ -358,11 +356,12 @@ first call since last time `lisa-insert-change-log' was called."
     (setq lisa--package-change-log lisa-package-change-log)
     (setq lisa-package-change-log  "")
     (setq do-insert t))
-  (when do-insert 
+  (when do-insert
     (save-excursion
-      (insert lisa--package-change-log)))
-  ;; (when (looking-at "$") (delete-char 1))
-  (lisa--success))
+      (insert lisa--package-change-log))
+    ;; (when (looking-at "$") (delete-char 1))
+    (lisa--success)))
+
 
 (defvar lisa--current-thing-before-update nil
   "Store the defun/defvar we were inside before calling `lisa-update-version-number'.
@@ -483,94 +482,6 @@ This is ignored (treated as nil) if paredit mode is active."
   :group 'lisa
   :package-version '(lisa . "0.1"))
 
-(defun lisa--find-in-buffer (r s)
-  "Find the string (concat R (regexp-quote S)) somewhere in this buffer."
-  (let ((l (save-excursion
-             (goto-char (point-min))
-             (save-match-data
-               (when (search-forward-regexp (concat r (regexp-quote s) "\\_>")
-                                            nil :noerror)
-                 (match-beginning 0))))))
-    (when l
-      (push-mark)
-      (goto-char l)
-      l)))
-
-(defun lisa-find-or-define-function (&optional prefix)
-  "Look at the symbol under point. If it's a defined function, go to it. If it isn't, go back to top level code and create a function with this name.
-
-`find-function' on steroids. It is a great to aid your workflow.
-
-If you write in your code the name of a function you haven't
-defined yet, you can then just place point on its name and hit
-\\[lisa-find-or-define-function] and a yasnippet defun will be
-inserted with point inside. After that, you can just hit C-u
-C-SPC (`pop-mark') to go back to where you were.
-
-If the function under point is already defined this just calls
-`find-function', with one exception:
-    if there's a defun for this function in the current buffer,
-    we go to that even if it's not where the global definition
-    comes from (this is useful if you're writing an emacs package
-    that also happens to be installed through package.el).
-
-With a prefix argument, defines a `defmacro' instead of a `defun'."
-  (interactive "P")
-  (let ((name (lisa--function-at-point)))
-    (unless (and name (lisa--find-in-buffer "(def\\(un\\|macro\\|alias\\) " name))
-     (if (function-called-at-point)
-         (find-function (function-called-at-point))
-       (push-mark)
-       (end-of-defun)
-       (insert "\n" (if prefix "(dm)" "(dfu)") "\n")
-       (backward-char 2)
-       (yas-expand)
-       (insert name)))))
-
-(defun lisa--function-at-point ()
-  "Return name of `function-called-at-point', unless it's `add-hook', then return symbol at point."
-  (let ((fcap (function-called-at-point)))
-    (or (and fcap
-             (not (memq fcap '(add-hook define-key)))
-             (symbol-name fcap))
-        (thing-at-point 'symbol))))
-
-(defun lisa-find-or-define-variable (&optional prefix)
-  "Look at the symbol under point. If it's a defined variable, go to it. If it isn't, go back to top level code and create a variable with this name.
-
-`find-function' on steroids. It is a great to aid your workflow.
-
-If you write in your code the name of a variable you haven't
-defined yet, you can then just place point on its name and hit
-\\[lisa-find-or-define-variable] and a yasnippet defun will be
-inserted with point inside. After that, you can just hit C-u
-C-SPC (`pop-mark') to go back to where you were.
-
-If the variable under point is already defined this just calls
-`find-variable', with one exception:
-    if there's a defvar for this variable in the current buffer,
-    we go to that even if it's not where the global definition
-    comes from (this is useful if you're writing an emacs package
-    that also happens to be installed through package.el).
-
-With a prefix argument, defines a `defvar' instead of a `defcustom'."
-  (interactive "P")
-  (let ((name (or (and (symbolp (variable-at-point))
-                       (symbol-name (variable-at-point)))
-                  (thing-at-point 'symbol))))
-    (unless (lisa--find-in-buffer "(def\\(custom\\|const\\|var\\) " name)
-      (unless (and (symbolp (variable-at-point))
-                   (ignore-errors (find-variable (variable-at-point)) t))
-        (push-mark)
-        (let ((name (thing-at-point 'symbol)))
-          (beginning-of-defun)
-          (when (looking-back "^;;;###autoload\\s-*\n")
-            (forward-line -1))
-          (insert "(" (if prefix "dv" "dc") ")\n\n")
-          (backward-char 3)
-          (yas-expand)
-          (insert name))))))
-
 (defun lisa-comment-sexp ()
   "Move to beginning of current sexp and comment it.
 
@@ -624,8 +535,6 @@ If anywhere inside a comment, uncomment it."
 (define-key lisa-lisa-map "l" 'lisa-insert-change-log)
 (define-key lisa-lisa-map "t" 'lisa-insert-template)
 (define-key lisa-lisa-map "u" 'lisa-update-version-number)
-(define-key lisa-lisa-map "f" 'lisa-find-or-define-function)
-(define-key lisa-lisa-map "v" 'lisa-find-or-define-variable)
 (define-key lisa-lisa-map "c" 'lisa-comment-sexp)
 (defcustom lisa-helpful-keymap nil
   "Whether Lisa's keymap should prefer being helpful or unobstrusive.
@@ -638,8 +547,6 @@ e\" (use \"C-c e C-h\" to see them all).
 If this is t, Lisa will always be right around the corner. All
 key bindings will be directly under \"C-c\".
 By default, these will be:
-    \"C-c f\" `lisa-find-or-define-function'
-    \"C-c v\" `lisa-find-or-define-variable'.
     \"C-c #\" `lisa-define-package-variables'
     \"C-c l\" `lisa-insert-change-log'
     \"C-c u\" `lisa-update-version-number'
@@ -761,8 +668,6 @@ The usual way to turn it on is:
 Most useful functions are (see full keymap below for other functions):
 \\[lisa-insert-change-log]  `lisa-insert-change-log'
 \\[lisa-update-version-number]  `lisa-update-version-number'
-\\[lisa-find-or-define-function]  `lisa-find-or-define-function'
-\\[lisa-find-or-define-variable]  `lisa-find-or-define-variable'
 
 Most useful yasnippets are:
    (df ---> Expands to a full defun
@@ -827,9 +732,7 @@ snippet         expansion
           (define-key lisa-mode-map "l" 'lisa-insert-change-log)
           (define-key lisa-mode-map "u" 'lisa-update-version-number)
           ;; (define-key lisa-mode-map "c" 'lisa-comment-sexp)
-          (define-key lisa-mode-map "t" 'lisa-insert-template)
-          (define-key lisa-mode-map "f" 'lisa-find-or-define-function)
-          (define-key lisa-mode-map "v" 'lisa-find-or-define-variable))
+          (define-key lisa-mode-map "t" 'lisa-insert-template))
         ;; New package template
         (if (lisa--should-template)
             (lisa-insert-template)
@@ -842,6 +745,33 @@ snippet         expansion
              (not (and (boundp 'paredit-mode) paredit-mode)))
     (insert ")")
     (forward-char -1)))
+
+(defun lisa--guess-group ()
+  "Guess the group name symbol."
+  (save-excursion
+    (save-match-data
+      (let ((group
+             (cond
+              ((and (fboundp 'names--top-of-namespace)
+                    (save-excursion
+                      (names--top-of-namespace)))
+               (names--top-of-namespace)
+               (unless (save-excursion (search-forward "\n:group" nil t))
+                 (or (search-forward "\n:package" nil t)
+                     (progn (forward-char 1)
+                            (forward-sexp 1)))
+                 (skip-chars-forward "\r\n[:blank:]")
+                 (replace-regexp-in-string
+                  "[^[:alnum:]]+$" ""
+                  (thing-at-point 'symbol))))
+              ((search-backward "\n(defgroup " nil t)
+               (forward-char 1)
+               (forward-sexp 1)
+               (skip-chars-forward "\r\n[:blank:]")
+               (thing-at-point 'symbol))
+              (t lisa-package-name))))
+        (when group
+          (format "\n:group ${4:%s}" group))))))
 
 (provide 'lisa)
 ;;; lisa.el ends here.
